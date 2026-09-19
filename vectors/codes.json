@@ -1,0 +1,362 @@
+[
+  {
+    "input": "GCB-7K2M-9QXD",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": "gcb 7k2m 9qxd",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": "GCB7K2M9QXD",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": " gcb-7k2m-9qxd\n",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": "https://vemphy.com/v/GCB-7K2M-9QXD",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": "https://vemphy.com/v/gcb-7k2m-9qxd?utm=x",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": "vemphy.com/v/GCB-7K2M-9QXD",
+    "result": {
+      "ok": true,
+      "code": "GCB-7K2M-9QXD",
+      "slug": "GCB",
+      "body": "7K2M9QX",
+      "check": "D"
+    },
+    "issuable": true
+  },
+  {
+    "input": "GCB-OOOO-OOOI",
+    "result": {
+      "ok": true,
+      "code": "GCB-0000-0001",
+      "slug": "GCB",
+      "body": "0000000",
+      "check": "1"
+    },
+    "issuable": true
+  },
+  {
+    "input": "gcb-oooo-oool",
+    "result": {
+      "ok": true,
+      "code": "GCB-0000-0001",
+      "slug": "GCB",
+      "body": "0000000",
+      "check": "1"
+    },
+    "issuable": true
+  },
+  {
+    "input": "G0B-0000-0001",
+    "result": {
+      "ok": false,
+      "error": "format",
+      "position": 2
+    }
+  },
+  {
+    "input": "GC8-7K2M-9QXD",
+    "result": {
+      "ok": false,
+      "error": "format",
+      "position": 3
+    }
+  },
+  {
+    "input": "",
+    "result": {
+      "ok": false,
+      "error": "format"
+    }
+  },
+  {
+    "input": "GCB-7K2M-9QX",
+    "result": {
+      "ok": false,
+      "error": "format"
+    }
+  },
+  {
+    "input": "TOOLONG-0000-0001",
+    "result": {
+      "ok": false,
+      "error": "format"
+    }
+  },
+  {
+    "input": "G-0000-0001",
+    "result": {
+      "ok": false,
+      "error": "format"
+    }
+  },
+  {
+    "input": "GCB-7K2M-9QXDD",
+    "result": {
+      "ok": false,
+      "error": "format"
+    }
+  },
+  {
+    "input": "GCB-7U2M-9QXD",
+    "result": {
+      "ok": false,
+      "error": "format",
+      "position": 5
+    }
+  },
+  {
+    "input": "GCD-7K2M-9QXD",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  },
+  {
+    "input": "GCB-7K2N-9QXD",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        11
+      ]
+    }
+  },
+  {
+    "input": "GCB-7K2M-9QKD",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  },
+  {
+    "input": "GCB-7K2M-9QXE",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        1,
+        2,
+        3,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  },
+  {
+    "input": "https://vemphy.com/v/%E0%A4%A",
+    "result": {
+      "ok": false,
+      "error": "format"
+    }
+  },
+  {
+    "input": "GCB-0000-00Z*",
+    "result": {
+      "ok": true,
+      "code": "GCB-0000-00Z*",
+      "slug": "GCB",
+      "body": "000000Z",
+      "check": "*"
+    },
+    "issuable": false
+  },
+  {
+    "input": "GCB-0000-0001",
+    "result": {
+      "ok": true,
+      "code": "GCB-0000-0001",
+      "slug": "GCB",
+      "body": "0000000",
+      "check": "1"
+    },
+    "issuable": true
+  },
+  {
+    "input": "UG-0000-0004",
+    "result": {
+      "ok": true,
+      "code": "UG-0000-0004",
+      "slug": "UG",
+      "body": "0000000",
+      "check": "4"
+    },
+    "issuable": true
+  },
+  {
+    "input": "UG-ZZZZ-ZZZP",
+    "result": {
+      "ok": true,
+      "code": "UG-ZZZZ-ZZZP",
+      "slug": "UG",
+      "body": "ZZZZZZZ",
+      "check": "P"
+    },
+    "issuable": true
+  },
+  {
+    "input": "LOU-1A2B-3C4K",
+    "result": {
+      "ok": true,
+      "code": "LOU-1A2B-3C4K",
+      "slug": "LOU",
+      "body": "1A2B3C4",
+      "check": "K"
+    },
+    "issuable": true
+  },
+  {
+    "input": "KNUS-9X8W-7V6B",
+    "result": {
+      "ok": true,
+      "code": "KNUS-9X8W-7V6B",
+      "slug": "KNUS",
+      "body": "9X8W7V6",
+      "check": "B"
+    },
+    "issuable": true
+  },
+  {
+    "input": "AB-HJKM-NPQK",
+    "result": {
+      "ok": true,
+      "code": "AB-HJKM-NPQK",
+      "slug": "AB",
+      "body": "HJKMNPQ",
+      "check": "K"
+    },
+    "issuable": true
+  },
+  {
+    "input": "EMP-5T4S-3R2=",
+    "result": {
+      "ok": true,
+      "code": "EMP-5T4S-3R2=",
+      "slug": "EMP",
+      "body": "5T4S3R2",
+      "check": "="
+    },
+    "issuable": false
+  },
+  {
+    "input": "GCB-QQQQ-QQQ6",
+    "result": {
+      "ok": true,
+      "code": "GCB-QQQQ-QQQ6",
+      "slug": "GCB",
+      "body": "QQQQQQQ",
+      "check": "6"
+    },
+    "issuable": true
+  },
+  {
+    "input": "UG-3N7P-1D9G",
+    "result": {
+      "ok": true,
+      "code": "UG-3N7P-1D9G",
+      "slug": "UG",
+      "body": "3N7P1D9",
+      "check": "G"
+    },
+    "issuable": true
+  },
+  {
+    "input": "KNUS-0000-0017",
+    "result": {
+      "ok": true,
+      "code": "KNUS-0000-0017",
+      "slug": "KNUS",
+      "body": "0000001",
+      "check": "7"
+    },
+    "issuable": true
+  }
+]
