@@ -7,6 +7,7 @@ import {
   formatCode,
   isIssuable,
   parseCode,
+  rankSuspects,
 } from './code.js'
 
 describe('checkChar', () => {
@@ -90,13 +91,45 @@ describe('parseCode', () => {
         const typed = chars.map((c, j) => (j === i ? replacement : c)).join('')
         const result = parseCode(typed)
         expect(result, typed).toMatchObject({ ok: false, error: 'check' })
-        if (!result.ok && result.error === 'check') {
-          expect(result.suspects, typed).toContain(i + 1)
-        }
         tried++
       }
     })
     expect(tried).toBe(3 * 25 + 7 * 31 + 36)
+  })
+})
+
+describe('suspects', () => {
+  const suspects = (typed: string) => {
+    const result = parseCode(typed)
+    if (result.ok || result.error !== 'check') throw new Error(`${typed} should fail its check`)
+    return result.suspects
+  }
+
+  it('puts a look-alike on a neighbouring key first', () => {
+    // Real code GCB-7K2M-9QXD, M typed as N.
+    expect(suspects('GCB-7K2N-9QXD')[0]).toBe(7)
+  })
+
+  it.each([
+    ['GCB-7KZM-9QXD', 6], // 2 read as Z
+    ['GCB-7K2M-9QXO', 11], // D read as O, which folds to 0
+    ['GCB-1K2M-9QXD', 4], // 7 read as 1
+  ])('points at the look-alike in %s', (typed, position) => {
+    expect(suspects(typed)[0]).toBe(position)
+  })
+
+  it('returns at most three positions and only ones with evidence', () => {
+    expect(rankSuspects([{ position: 5, typed: 'K', repair: '2' }], 3)).toEqual([])
+    const many = [...'ABCDE'].map((_, i) => ({ position: 4 + i, typed: 'M', repair: 'N' }))
+    expect(rankSuspects(many, 3)).toEqual([8, 7, 6])
+  })
+
+  it('prefers the body over the slug on a tie', () => {
+    const tie = [
+      { position: 2, typed: 'M', repair: 'N' },
+      { position: 6, typed: 'M', repair: 'N' },
+    ]
+    expect(rankSuspects(tie, 3)).toEqual([6, 2])
   })
 })
 

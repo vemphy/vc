@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -53,7 +54,8 @@ type Candidate struct {
 }
 
 // ParseError reports why a code was rejected. Position is set for a format
-// error caused by one invalid character. Suspects is set for a check error.
+// error caused by one invalid character. Suspects is set for a check error
+// and may be empty.
 type ParseError struct {
 	Kind     ErrorKind
 	Position int
@@ -164,7 +166,7 @@ func Parse(input string) (Code, error) {
 	body, check := folded[:bodyLength], folded[bodyLength]
 
 	if CheckCharFor(slug, body) != check {
-		return Code{}, &ParseError{Kind: ErrCheck, Suspects: RankSuspects(repairs(slug, body, check))}
+		return Code{}, &ParseError{Kind: ErrCheck, Suspects: RankSuspects(repairs(slug, body, check), len(slug))}
 	}
 	return Code{Slug: slug, Body: body, Check: string(check)}, nil
 }
@@ -218,12 +220,77 @@ func repairs(slug, body string, check byte) []Candidate {
 	return append(out, Candidate{Position: len(slug) + len(body) + 1, Typed: check, Repair: CheckCharFor(slug, body)})
 }
 
-// RankSuspects orders the positions a person should re-check, most likely
-// first. It must return the same order as rankSuspects in packages/vc/src/code.ts.
-func RankSuspects(candidates []Candidate) []int {
-	out := make([]int, len(candidates))
-	for i, c := range candidates {
-		out[i] = c.Position
+// Pairs that are easy to confuse when a code is read from print, a photocopy
+// or a photo. Order within a pair does not matter.
+var lookalikes = []string{
+	"0D", "0Q", "17", "1T", "2Z", "38", "4A", "5S", "6G", "68", "8B", "9G", "9Q",
+	"CG", "EF", "HN", "KX", "MN", "PR", "UV", "VY", "VW", "OQ", "OD", "IL", "IJ",
+}
+
+// Keyboard rows. Neighbours in a row are one slip of the thumb apart, on a phone or a desktop.
+var keyRows = []string{"1234567890", "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"}
+
+const (
+	lookalikeScore = 3
+	adjacentScore  = 2
+	maxSuspects    = 3
+)
+
+func slipScore(a, b byte) int {
+	score := 0
+	for _, pair := range lookalikes {
+		if (pair[0] == a && pair[1] == b) || (pair[0] == b && pair[1] == a) {
+			score += lookalikeScore
+			break
+		}
+	}
+	for _, row := range keyRows {
+		i, j := strings.IndexByte(row, a), strings.IndexByte(row, b)
+		if i >= 0 && j >= 0 && (i-j == 1 || j-i == 1) {
+			score += adjacentScore
+		}
+	}
+	return score
+}
+
+// RankSuspects picks the positions a person should re-check, most likely first.
+//
+// Every candidate is a position where changing Typed to Repair would make the
+// code consistent. Usually there are several and only one is the real slip, so
+// a candidate is only reported when the two characters look alike or sit next
+// to each other on a keyboard. An empty result means there is nothing worth
+// pointing at and the caller should ask for the whole code to be checked.
+//
+// Ties go to the body over the slug (slugs are known words, rarely mistyped)
+// and then to the later position. The order must match rankSuspects in
+// packages/vc/src/code.ts; vectors/codes.json holds both to it.
+func RankSuspects(candidates []Candidate, slugLength int) []int {
+	type scored struct {
+		position, score int
+		inSlug          bool
+	}
+	var kept []scored
+	for _, c := range candidates {
+		if s := slipScore(c.Typed, c.Repair); s > 0 {
+			kept = append(kept, scored{c.Position, s, c.Position <= slugLength})
+		}
+	}
+	sort.Slice(kept, func(i, j int) bool {
+		a, b := kept[i], kept[j]
+		if a.score != b.score {
+			return a.score > b.score
+		}
+		if a.inSlug != b.inSlug {
+			return !a.inSlug
+		}
+		return a.position > b.position
+	})
+	if len(kept) > maxSuspects {
+		kept = kept[:maxSuspects]
+	}
+	out := make([]int, len(kept))
+	for i, k := range kept {
+		out[i] = k.position
 	}
 	return out
 }

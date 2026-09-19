@@ -28,6 +28,7 @@ export type Candidate = {
 
 export type ParseFailure =
   | { ok: false; error: 'format'; position?: number }
+  /** `suspects` holds 1-based positions worth re-checking, best first. It may be empty. */
   | { ok: false; error: 'check'; suspects: number[] }
 
 export type ParseSuccess = { ok: true; code: string; slug: string; body: string; check: string }
@@ -102,7 +103,7 @@ export function parseCode(input: string): ParseResult {
   const check = folded[BODY_LENGTH]!
 
   if (checkCharFor(slug, body) !== check) {
-    return { ok: false, error: 'check', suspects: rankSuspects(repairs(slug, body, check)) }
+    return { ok: false, error: 'check', suspects: rankSuspects(repairs(slug, body, check), slug.length) }
   }
   return { ok: true, code: `${slug}-${body.slice(0, 4)}-${body.slice(4)}${check}`, slug, body, check }
 }
@@ -147,14 +148,46 @@ function repairs(slug: string, body: string, check: string): Candidate[] {
   return out
 }
 
+// Pairs that are easy to confuse when a code is read from print, a photocopy
+// or a photo. Order within a pair does not matter.
+const LOOKALIKES = [
+  '0D', '0Q', '17', '1T', '2Z', '38', '4A', '5S', '6G', '68', '8B', '9G', '9Q',
+  'CG', 'EF', 'HN', 'KX', 'MN', 'PR', 'UV', 'VY', 'VW', 'OQ', 'OD', 'IL', 'IJ',
+]
+// Keyboard rows. Neighbours in a row are one slip of the thumb apart, on a phone or a desktop.
+const KEY_ROWS = ['1234567890', 'QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
+const LOOKALIKE_SCORE = 3
+const ADJACENT_SCORE = 2
+const MAX_SUSPECTS = 3
+
+function slipScore(a: string, b: string): number {
+  let score = 0
+  if (LOOKALIKES.includes(a + b) || LOOKALIKES.includes(b + a)) score += LOOKALIKE_SCORE
+  for (const row of KEY_ROWS) {
+    const i = row.indexOf(a)
+    const j = row.indexOf(b)
+    if (i >= 0 && j >= 0 && Math.abs(i - j) === 1) score += ADJACENT_SCORE
+  }
+  return score
+}
+
 /**
- * Orders the positions a person should re-check, most likely first.
+ * Picks the positions a person should re-check, most likely first.
  *
  * Every candidate is a position where changing `typed` to `repair` would make
- * the code consistent. Usually there are several; only one is the real slip.
- * The verify page shows the first entry as "check the Nth character".
+ * the code consistent. Usually there are several and only one is the real slip,
+ * so a candidate is only reported when the two characters look alike or sit
+ * next to each other on a keyboard. An empty result means there is nothing
+ * worth pointing at and the caller should ask for the whole code to be checked.
+ *
+ * Ties go to the body over the slug (slugs are known words, rarely mistyped)
+ * and then to the later position.
  */
-export function rankSuspects(candidates: Candidate[]): number[] {
-  // TODO(owner): rank by how likely each slip is. See docs/plans, Task 2.
-  return candidates.map((c) => c.position)
+export function rankSuspects(candidates: Candidate[], slugLength: number): number[] {
+  return candidates
+    .map((c) => ({ position: c.position, score: slipScore(c.typed, c.repair), inSlug: c.position <= slugLength }))
+    .filter((c) => c.score > 0)
+    .sort((a, b) => b.score - a.score || Number(a.inSlug) - Number(b.inSlug) || b.position - a.position)
+    .slice(0, MAX_SUSPECTS)
+    .map((c) => c.position)
 }

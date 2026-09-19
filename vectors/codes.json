@@ -162,18 +162,7 @@
     "result": {
       "ok": false,
       "error": "check",
-      "suspects": [
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11
-      ]
+      "suspects": []
     }
   },
   {
@@ -182,14 +171,67 @@
       "ok": false,
       "error": "check",
       "suspects": [
-        2,
-        4,
-        5,
-        6,
         7,
-        8,
-        10,
+        2
+      ]
+    }
+  },
+  {
+    "input": "GCB-7KZM-9QXD",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        6,
+        1
+      ]
+    }
+  },
+  {
+    "input": "GCB-7K2M-9QXO",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
         11
+      ]
+    }
+  },
+  {
+    "input": "GCB-1K2M-9QXD",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        4
+      ]
+    }
+  },
+  {
+    "input": "GCB-7K2M-9QVD",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": []
+    }
+  },
+  {
+    "input": "UG-3N7P-1D9B",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": []
+    }
+  },
+  {
+    "input": "KNVS-9X8W-7V6T",
+    "result": {
+      "ok": false,
+      "error": "check",
+      "suspects": [
+        11,
+        3,
+        12
       ]
     }
   },
@@ -199,17 +241,8 @@
       "ok": false,
       "error": "check",
       "suspects": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
         10,
-        11
+        3
       ]
     }
   },
@@ -218,17 +251,7 @@
     "result": {
       "ok": false,
       "error": "check",
-      "suspects": [
-        1,
-        2,
-        3,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11
-      ]
+      "suspects": []
     }
   },
   {
