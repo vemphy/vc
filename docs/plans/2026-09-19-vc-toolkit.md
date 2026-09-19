@@ -43,7 +43,7 @@ packages/vc/
   scripts/gen-vectors.ts
 vc-go/
   go.mod  go.sum
-  code/  context/  canon/  multibase/  did/  proof/  status/  verify/   (each: x.go + x_test.go)
+  code/  vcctx/  canon/  multibase/  did/  proof/  status/  verify/   (each: x.go + x_test.go)
   internal/vectors/vectors.go      (locates and loads ../vectors for tests)
   cmd/vcinterop/main.go            (sign / verify / canon, used by interop.yml)
 vectors/
@@ -166,7 +166,7 @@ export async function canonicalize(doc: object, loader?: DocumentLoader): Promis
 
 ### Task 5: Contexts and canonicalization — Go
 
-**Files:** `vc-go/context/{credentials-v2.json,claims-v1.json,context.go}`, `vc-go/canon/canon.go`, tests, `scripts/check-contexts.sh`.
+**Files:** `vc-go/vcctx/{credentials-v2.json,claims-v1.json,context.go}`, `vc-go/canon/canon.go`, tests, `scripts/check-contexts.sh`.
 
 **Produces:**
 
@@ -183,7 +183,7 @@ func Canonicalize(doc map[string]any, loader ld.DocumentLoader) (string, error)
 `Canonicalize`: `ld.NewJsonLdProcessor().Normalize` with `Algorithm = ld.AlgorithmURDNA2015`, `Format = "application/n-quads"`, `SafeMode = true` where the pinned json-gold version supports it; otherwise expand first and reject when any key was dropped (compare property counts against the compacted input) — decide by reading the pinned version's `JsonLdOptions`.
 
 - [ ] Test: `vectors/canon/minimal.nq` reproduced byte for byte from the same input JSON (store the input as `vectors/canon/minimal.json`); unknown context → `ErrUnknownContext`; undefined property → error.
-- [ ] `scripts/check-contexts.sh`: `cmp` each JSON in `packages/vc/src/context/` against `vc-go/context/`.
+- [ ] `scripts/check-contexts.sh`: `cmp` each JSON in `packages/vc/src/context/` against `vc-go/vcctx/`.
 - [ ] If any byte differs between TS and Go N-Quads, stop and resolve before continuing: every later task depends on this. Commit `Add contexts and canonicalization (Go)`.
 
 ---

@@ -1,0 +1,49 @@
+{
+  "@context": {
+    "@protected": true,
+    "vemphy": "https://vemphy.com/ns/claims#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "BankReferenceLetter": "vemphy:BankReferenceLetter",
+    "DegreeCertificate": "vemphy:DegreeCertificate",
+    "EmploymentLetter": "vemphy:EmploymentLetter",
+    "accountHolderName": "vemphy:accountHolderName",
+    "accountType": "vemphy:accountType",
+    "accountNumberLast4": "vemphy:accountNumberLast4",
+    "accountOpenedOn": {
+      "@id": "vemphy:accountOpenedOn",
+      "@type": "xsd:date"
+    },
+    "branch": "vemphy:branch",
+    "standing": "vemphy:standing",
+    "addressedTo": "vemphy:addressedTo",
+    "referenceDate": {
+      "@id": "vemphy:referenceDate",
+      "@type": "xsd:date"
+    },
+    "graduateName": "vemphy:graduateName",
+    "studentNumber": "vemphy:studentNumber",
+    "qualification": "vemphy:qualification",
+    "programme": "vemphy:programme",
+    "classification": "vemphy:classification",
+    "conferredOn": {
+      "@id": "vemphy:conferredOn",
+      "@type": "xsd:date"
+    },
+    "employeeName": "vemphy:employeeName",
+    "staffNumber": "vemphy:staffNumber",
+    "jobTitle": "vemphy:jobTitle",
+    "employmentType": "vemphy:employmentType",
+    "startDate": {
+      "@id": "vemphy:startDate",
+      "@type": "xsd:date"
+    },
+    "endDate": {
+      "@id": "vemphy:endDate",
+      "@type": "xsd:date"
+    },
+    "currentlyEmployed": {
+      "@id": "vemphy:currentlyEmployed",
+      "@type": "xsd:boolean"
+    }
+  }
+}
