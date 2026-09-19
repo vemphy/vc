@@ -1,0 +1,12 @@
+{
+  "name": "vemphy-vc-workspace",
+  "private": true,
+  "packageManager": "pnpm@12.4.1",
+  "scripts": {
+    "build": "pnpm --filter @vemphy/vc build",
+    "test": "pnpm --filter @vemphy/vc test",
+    "typecheck": "pnpm --filter @vemphy/vc typecheck",
+    "gen:vectors": "pnpm --filter @vemphy/vc gen:vectors",
+    "check:wording": "scripts/check-wording.sh"
+  }
+}

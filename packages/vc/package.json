@@ -1,0 +1,38 @@
+{
+  "name": "@vemphy/vc",
+  "version": "0.0.0",
+  "description": "Verify Vemphy claims: W3C Verifiable Credentials 2.0, eddsa-rdfc-2022, Bitstring Status List.",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/vemphy/vc.git", "directory": "packages/vc" },
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=20" },
+  "bin": { "vemphy-vc": "./dist/cli/main.js" },
+  "exports": {
+    ".": { "types": "./dist/src/index.d.ts", "import": "./dist/src/index.js" },
+    "./code": { "types": "./dist/src/code.d.ts", "import": "./dist/src/code.js" },
+    "./schema": { "types": "./dist/src/schema/index.d.ts", "import": "./dist/src/schema/index.js" }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "gen:vectors": "tsx scripts/gen-vectors.ts"
+  },
+  "dependencies": {
+    "@noble/ed25519": "3.2.0",
+    "@noble/hashes": "2.4.0",
+    "@scure/base": "2.4.0",
+    "jsonld": "9.0.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/jsonld": "1.5.15",
+    "@types/node": "24.13.5",
+    "tsup": "8.5.1",
+    "tsx": "4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "5.0.1"
+  }
+}
