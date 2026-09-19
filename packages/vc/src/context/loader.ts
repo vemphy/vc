@@ -1,8 +1,9 @@
 import claimsV1 from './claims-v1.json' with { type: 'json' }
 import credentialsV2 from './credentials-v2.json' with { type: 'json' }
 
-export const CREDENTIALS_V2 = 'https://www.w3.org/ns/credentials/v2'
-export const CLAIMS_V1 = 'https://vemphy.com/ns/claims/v1'
+import { CLAIMS_V1, CREDENTIALS_V2 } from './urls.js'
+
+export { CLAIMS_V1, CREDENTIALS_V2 }
 
 // credentials-v2.json is the W3C file, byte for byte. Its SHA-256 is published in the
 // Verifiable Credentials Data Model 2.0 specification:
