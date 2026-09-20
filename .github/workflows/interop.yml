@@ -84,7 +84,6 @@ jobs:
           pnpm gen:vectors
           pnpm --filter @vemphy/vc gen:codes
           pnpm --filter @vemphy/vc exec tsx scripts/gen-status-fixture.ts
-          (cd vc-go && UPDATE_VECTORS=1 go test ./status)
           git diff --exit-code -- vectors
       - run: scripts/check-contexts.sh
       - run: scripts/check-wording.sh

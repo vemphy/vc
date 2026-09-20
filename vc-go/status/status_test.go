@@ -99,7 +99,13 @@ func TestDecodeRefuses(t *testing.T) {
 	}
 }
 
-// The TypeScript tests decode this file. Run with UPDATE_VECTORS=1 to rewrite it.
+// vectors/status/encoding-go.json is a list encoded by this package, which the
+// TypeScript tests decode. Run with UPDATE_VECTORS=1 to rewrite it.
+//
+// The compressed bytes are not compared: compress/flate is free to produce
+// different output from one Go release to the next, and it has. What has to
+// hold is that the committed text and a fresh encoding both decode to the
+// same bits.
 func TestGoEncodingFixture(t *testing.T) {
 	set := []int{0, 9, 94_567, ListBits - 1}
 	bits := make([]byte, listBytes)
@@ -121,7 +127,10 @@ func TestGoEncodingFixture(t *testing.T) {
 		EncodedList string `json:"encodedList"`
 	}
 	vectors.Load(t, "status/encoding-go.json", &fixture)
-	if fixture.EncodedList != encoded {
-		t.Error("vectors/status/encoding-go.json is out of date; run with UPDATE_VECTORS=1")
+	for name, text := range map[string]string{"committed": fixture.EncodedList, "fresh": encoded} {
+		got, err := Decode(text)
+		if err != nil || !bytes.Equal(got, bits) {
+			t.Errorf("%s encoding does not decode to the expected bits: %v", name, err)
+		}
 	}
 }

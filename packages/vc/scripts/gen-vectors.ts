@@ -3,6 +3,11 @@
 // Everything here is derived from fixed inputs, and Ed25519 signatures are
 // deterministic, so running this twice produces identical files. CI runs it
 // and fails if anything under vectors/ changes.
+//
+// The one input not under this script's control is zlib: status lists are
+// gzip-compressed, and a Node release with a different zlib may compress them
+// differently. If CI reports a diff in vectors/status after a Node upgrade,
+// regenerate and commit. Every test still has to pass with the new files.
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { sha256 } from '@noble/hashes/sha2.js'

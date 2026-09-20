@@ -49,7 +49,8 @@ func Decode(encodedList string) ([]byte, error) {
 	return bits, nil
 }
 
-// Encode is deterministic: the gzip header carries no timestamp or file name.
+// Encode writes a gzip header with no timestamp or file name. The compressed
+// bytes can still differ between Go releases; only the decoded list is stable.
 func Encode(bits []byte) (string, error) {
 	if len(bits) != listBytes {
 		return "", ErrSize
