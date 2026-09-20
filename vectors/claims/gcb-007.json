@@ -1,0 +1,39 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/claims/v1"
+  ],
+  "id": "urn:vemphy:claim:GCB-KNTD-MBFV",
+  "type": [
+    "VerifiableCredential",
+    "BankReferenceLetter"
+  ],
+  "issuer": "did:web:vemphy.com:i:gcb",
+  "validFrom": "2025-11-03T09:00:00Z",
+  "validUntil": "2026-11-03T09:00:00Z",
+  "credentialSubject": {
+    "accountHolderName": "Ama Serwaa Mensah",
+    "accountType": "current",
+    "accountNumberLast4": "0042",
+    "accountOpenedOn": "2019-03-04",
+    "branch": "Accra High Street",
+    "standing": "satisfactory",
+    "addressedTo": "The Consular Section",
+    "referenceDate": "2026-05-04"
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/gcb/status/1#94572",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "94572",
+    "statusListCredential": "https://vemphy.com/i/gcb/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2025-11-03T09:00:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:gcb#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z3g24FTKBjvFPng6KkKLrHQQDGmxLNef4P5Aup8acxPV1kWVFSzcYhAd9NUvJQMs5VXbe7R2rdibzEh7kyhqkwZG3"
+  }
+}

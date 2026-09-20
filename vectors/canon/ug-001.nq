@@ -1,0 +1,16 @@
+<https://vemphy.com/i/ug/status/1#1001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/ns/credentials/status#BitstringStatusListEntry> .
+<https://vemphy.com/i/ug/status/1#1001> <https://www.w3.org/ns/credentials/status#statusListCredential> <https://vemphy.com/i/ug/status/1> .
+<https://vemphy.com/i/ug/status/1#1001> <https://www.w3.org/ns/credentials/status#statusListIndex> "1001" .
+<https://vemphy.com/i/ug/status/1#1001> <https://www.w3.org/ns/credentials/status#statusPurpose> "revocation" .
+<urn:vemphy:claim:UG-QC6B-QMM0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://vemphy.com/ns/claims#DegreeCertificate> .
+<urn:vemphy:claim:UG-QC6B-QMM0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
+<urn:vemphy:claim:UG-QC6B-QMM0> <https://www.w3.org/2018/credentials#credentialStatus> <https://vemphy.com/i/ug/status/1#1001> .
+<urn:vemphy:claim:UG-QC6B-QMM0> <https://www.w3.org/2018/credentials#credentialSubject> _:c14n0 .
+<urn:vemphy:claim:UG-QC6B-QMM0> <https://www.w3.org/2018/credentials#issuer> <did:web:vemphy.com:i:ug> .
+<urn:vemphy:claim:UG-QC6B-QMM0> <https://www.w3.org/2018/credentials#validFrom> "2024-11-16T00:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:c14n0 <https://vemphy.com/ns/claims#classification> "First Class Honours" .
+_:c14n0 <https://vemphy.com/ns/claims#conferredOn> "2024-11-16"^^<http://www.w3.org/2001/XMLSchema#date> .
+_:c14n0 <https://vemphy.com/ns/claims#graduateName> "Kwame Boateng" .
+_:c14n0 <https://vemphy.com/ns/claims#programme> "Computer Science" .
+_:c14n0 <https://vemphy.com/ns/claims#qualification> "BSc" .
+_:c14n0 <https://vemphy.com/ns/claims#studentNumber> "10456789" .

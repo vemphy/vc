@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/claims/v1"
+  ],
+  "id": "urn:vemphy:claim:EMP-N6C5-9D25",
+  "type": [
+    "VerifiableCredential",
+    "EmploymentLetter"
+  ],
+  "issuer": "did:web:vemphy.com:i:emp",
+  "validFrom": "2026-05-20T14:30:00Z",
+  "validUntil": "2026-08-20T14:30:00Z",
+  "credentialSubject": {
+    "employeeName": "Efua Asante",
+    "staffNumber": "E-2210",
+    "jobTitle": "Senior Accountant",
+    "employmentType": "permanent",
+    "startDate": "2021-02-01",
+    "currentlyEmployed": true
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/emp/status/1#58310",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "58310",
+    "statusListCredential": "https://vemphy.com/i/emp/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2026-05-20T14:30:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:emp#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z33zFLfNQ5KpCJ1vxstwLSKiRXdVdXcGJSETgBURGw52tqv8Um6PTkvab1eLcuswE5cMSqw6ieNL67UsxmNJUceu3"
+  }
+}

@@ -1,0 +1,17 @@
+<https://vemphy.com/i/emp/status/1#58310> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/ns/credentials/status#BitstringStatusListEntry> .
+<https://vemphy.com/i/emp/status/1#58310> <https://www.w3.org/ns/credentials/status#statusListCredential> <https://vemphy.com/i/emp/status/1> .
+<https://vemphy.com/i/emp/status/1#58310> <https://www.w3.org/ns/credentials/status#statusListIndex> "58310" .
+<https://vemphy.com/i/emp/status/1#58310> <https://www.w3.org/ns/credentials/status#statusPurpose> "revocation" .
+<urn:vemphy:claim:EMP-N6C5-9D25> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://vemphy.com/ns/claims#EmploymentLetter> .
+<urn:vemphy:claim:EMP-N6C5-9D25> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
+<urn:vemphy:claim:EMP-N6C5-9D25> <https://www.w3.org/2018/credentials#credentialStatus> <https://vemphy.com/i/emp/status/1#58310> .
+<urn:vemphy:claim:EMP-N6C5-9D25> <https://www.w3.org/2018/credentials#credentialSubject> _:c14n0 .
+<urn:vemphy:claim:EMP-N6C5-9D25> <https://www.w3.org/2018/credentials#issuer> <did:web:vemphy.com:i:emp> .
+<urn:vemphy:claim:EMP-N6C5-9D25> <https://www.w3.org/2018/credentials#validFrom> "2026-05-20T14:30:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<urn:vemphy:claim:EMP-N6C5-9D25> <https://www.w3.org/2018/credentials#validUntil> "2026-08-20T14:30:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:c14n0 <https://vemphy.com/ns/claims#currentlyEmployed> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:c14n0 <https://vemphy.com/ns/claims#employeeName> "Efua Asante" .
+_:c14n0 <https://vemphy.com/ns/claims#employmentType> "permanent" .
+_:c14n0 <https://vemphy.com/ns/claims#jobTitle> "Senior Accountant" .
+_:c14n0 <https://vemphy.com/ns/claims#staffNumber> "E-2210" .
+_:c14n0 <https://vemphy.com/ns/claims#startDate> "2021-02-01"^^<http://www.w3.org/2001/XMLSchema#date> .

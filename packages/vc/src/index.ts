@@ -1,1 +1,9 @@
-export {}
+export * from './code.js'
+export * from './schema/index.js'
+export { canonicalize } from './canon.js'
+export { CLAIMS_V1, CREDENTIALS_V2, staticLoader, UnknownContextError, type DocumentLoader } from './context/loader.js'
+export { didToUrl, findKey, parseDidDocument, slugOf, type ResolvedKey } from './did.js'
+export { decodeBase58btc, decodeMultikey, encodeBase58btc, encodeMultikey } from './multibase.js'
+export { createProof, hashForProof, memorySigner, verifyProof, type Signer } from './proof.js'
+export { decodeList, encodeList, getBit, LIST_BITS, setBit } from './status.js'
+export { verifyCredential, type Check, type Outcome, type Reason, type Result, type VerifyDeps } from './verify.js'

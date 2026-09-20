@@ -1,0 +1,19 @@
+<https://vemphy.com/i/gcb/status/1#4242> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/ns/credentials/status#BitstringStatusListEntry> .
+<https://vemphy.com/i/gcb/status/1#4242> <https://www.w3.org/ns/credentials/status#statusListCredential> <https://vemphy.com/i/gcb/status/1> .
+<https://vemphy.com/i/gcb/status/1#4242> <https://www.w3.org/ns/credentials/status#statusListIndex> "4242" .
+<https://vemphy.com/i/gcb/status/1#4242> <https://www.w3.org/ns/credentials/status#statusPurpose> "revocation" .
+<urn:vemphy:claim:GCB-E9YM-HD54> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://vemphy.com/ns/claims#BankReferenceLetter> .
+<urn:vemphy:claim:GCB-E9YM-HD54> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
+<urn:vemphy:claim:GCB-E9YM-HD54> <https://www.w3.org/2018/credentials#credentialStatus> <https://vemphy.com/i/gcb/status/1#4242> .
+<urn:vemphy:claim:GCB-E9YM-HD54> <https://www.w3.org/2018/credentials#credentialSubject> _:c14n0 .
+<urn:vemphy:claim:GCB-E9YM-HD54> <https://www.w3.org/2018/credentials#issuer> <did:web:vemphy.com:i:gcb> .
+<urn:vemphy:claim:GCB-E9YM-HD54> <https://www.w3.org/2018/credentials#validFrom> "2026-05-04T09:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<urn:vemphy:claim:GCB-E9YM-HD54> <https://www.w3.org/2018/credentials#validUntil> "2026-08-04T09:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:c14n0 <https://vemphy.com/ns/claims#accountHolderName> "Ama Serwaa Mensah" .
+_:c14n0 <https://vemphy.com/ns/claims#accountNumberLast4> "0042" .
+_:c14n0 <https://vemphy.com/ns/claims#accountOpenedOn> "2019-03-04"^^<http://www.w3.org/2001/XMLSchema#date> .
+_:c14n0 <https://vemphy.com/ns/claims#accountType> "current" .
+_:c14n0 <https://vemphy.com/ns/claims#addressedTo> "The Consular Section" .
+_:c14n0 <https://vemphy.com/ns/claims#branch> "Accra High Street" .
+_:c14n0 <https://vemphy.com/ns/claims#referenceDate> "2026-05-04"^^<http://www.w3.org/2001/XMLSchema#date> .
+_:c14n0 <https://vemphy.com/ns/claims#standing> "satisfactory" .

@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2"
+  ],
+  "id": "https://vemphy.com/i/emp/status/1",
+  "type": [
+    "VerifiableCredential",
+    "BitstringStatusListCredential"
+  ],
+  "issuer": "did:web:vemphy.com:i:emp",
+  "validFrom": "2026-06-01T11:30:00Z",
+  "validUntil": "2026-06-01T12:30:00Z",
+  "credentialSubject": {
+    "id": "https://vemphy.com/i/emp/status/1#list",
+    "type": "BitstringStatusList",
+    "statusPurpose": "revocation",
+    "encodedList": "uH4sIAAAAAAAA_-3BMQEAAADCoPVPbQwfoAAAAAAAAAAAAAAAAAAAAIC3AYbSVKsAQAAA"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2026-06-01T11:30:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:emp#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z29J7hs2NNJZbUBFq3BNL1xEsJ1LDvZRoEDvek482U1yRvvnfVrUJaU4NzQQ9KCucmbaisvSGNUyNjwvWTWdMhhUF"
+  }
+}

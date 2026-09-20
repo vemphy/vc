@@ -1,0 +1,11 @@
+{
+  "warning": "TEST KEYS. These seeds are public. Never use them outside tests.",
+  "seeds": {
+    "did:web:vemphy.com:i:gcb#key-1": "1581f6636633c7cc72345a6e5e57a783b4566656d32bb6f14d17425cc10fdc99",
+    "did:web:vemphy.com:i:gcb#key-2": "195d5ce4c3863a872df14d11c22c37e607de4307417d5641c4a3217a609a8332",
+    "did:web:vemphy.com:i:gcb#key-3": "627d480edb8556c5ebae359b32b8cac104765154e877ce4c308f09c0803d45ed",
+    "did:web:vemphy.com:i:gcb#key-9": "671bc6d083ca5dac49625adc8be3fae1732bdb43ba34547c63fc11e4767f0835",
+    "did:web:vemphy.com:i:ug#key-1": "18a302afd1830f21dd191706ed25c103552035192ab6c47b7c159b774f0b1a42",
+    "did:web:vemphy.com:i:emp#key-1": "bae7137d88f7683c92cfbb8fc1f08b073caf56b18d4ffb3dbaae8fac65a23efe"
+  }
+}

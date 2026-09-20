@@ -1,0 +1,62 @@
+{
+  "now": "2026-06-01T12:00:00Z",
+  "vectors": {
+    "gcb-001": {
+      "result": "valid",
+      "note": "A bank reference letter in good order."
+    },
+    "ug-001": {
+      "result": "valid",
+      "note": "A degree certificate. It has no validUntil."
+    },
+    "emp-001": {
+      "result": "valid",
+      "note": "An employment letter in good order."
+    },
+    "gcb-002": {
+      "result": "unknown",
+      "reason": "signature_failure",
+      "note": "One letter of the account holder name was changed after signing."
+    },
+    "gcb-003": {
+      "result": "unknown",
+      "reason": "key_not_found",
+      "note": "Signed with a key that is not in the issuer DID document."
+    },
+    "gcb-004": {
+      "result": "revoked",
+      "note": "Its bit is set in the status list."
+    },
+    "gcb-005": {
+      "result": "expired",
+      "note": "validUntil has passed."
+    },
+    "gcb-006": {
+      "result": "unknown",
+      "reason": "key_window_violation",
+      "note": "Signed with key-3 a month after key-3 was revoked."
+    },
+    "gcb-007": {
+      "result": "valid",
+      "note": "Signed with key-1, which has since been retired in favour of key-2. Rotation does not disturb it."
+    },
+    "gcb-008": {
+      "result": "unknown",
+      "reason": "status_list_unverifiable",
+      "note": "Its status list is past its own validUntil, so revocation cannot be ruled out."
+    },
+    "gcb-009": {
+      "result": "unknown",
+      "reason": "malformed",
+      "note": "Carries a context that is not one of the two a claim may use."
+    },
+    "gcb-010": {
+      "result": "revoked",
+      "note": "Both revoked and past validUntil. Revocation is reported."
+    },
+    "gcb-011": {
+      "result": "valid",
+      "note": "Signed with key-3 a month before key-3 was revoked."
+    }
+  }
+}

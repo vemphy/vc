@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/multikey/v1"
+  ],
+  "id": "did:web:vemphy.com:i:gcb",
+  "verificationMethod": [
+    {
+      "id": "did:web:vemphy.com:i:gcb#key-1",
+      "type": "Multikey",
+      "controller": "did:web:vemphy.com:i:gcb",
+      "publicKeyMultibase": "z6MkguERTVRDHGiCRxdYyY42UqYJsgXKJQioV93Km3CQxXnZ"
+    },
+    {
+      "id": "did:web:vemphy.com:i:gcb#key-2",
+      "type": "Multikey",
+      "controller": "did:web:vemphy.com:i:gcb",
+      "publicKeyMultibase": "z6MkiGwUbtWY6pWdU37W9dXUWQFbRdib77f6GPfqu64Lf9mn"
+    },
+    {
+      "id": "did:web:vemphy.com:i:gcb#key-3",
+      "type": "Multikey",
+      "controller": "did:web:vemphy.com:i:gcb",
+      "publicKeyMultibase": "z6MkinHXSXBZkt3dLShVChHka8a5FzRpgvtgk2D9ZjZAuEEy",
+      "revoked": "2026-03-01T00:00:00Z"
+    }
+  ],
+  "assertionMethod": [
+    "did:web:vemphy.com:i:gcb#key-2"
+  ]
+}

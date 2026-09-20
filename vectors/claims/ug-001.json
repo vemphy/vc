@@ -1,0 +1,36 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/claims/v1"
+  ],
+  "id": "urn:vemphy:claim:UG-QC6B-QMM0",
+  "type": [
+    "VerifiableCredential",
+    "DegreeCertificate"
+  ],
+  "issuer": "did:web:vemphy.com:i:ug",
+  "validFrom": "2024-11-16T00:00:00Z",
+  "credentialSubject": {
+    "graduateName": "Kwame Boateng",
+    "studentNumber": "10456789",
+    "qualification": "BSc",
+    "programme": "Computer Science",
+    "classification": "First Class Honours",
+    "conferredOn": "2024-11-16"
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/ug/status/1#1001",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "1001",
+    "statusListCredential": "https://vemphy.com/i/ug/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2024-11-18T10:00:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:ug#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z3pMh793RpsqpmY9jDkzBzZV6sM7MqtGyGGieKq3bZbRn9pSLPWCVf8sn8iV5SPUeQsBWkLk9J5UusZaMDrT989pk"
+  }
+}
