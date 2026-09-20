@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CLAIMS_V1, CREDENTIALS_V2 } from '../context/urls.js'
-import { LIST_BITS } from '../status.js'
+import { LIST_BITS } from '../constants.js'
 import { bankReferenceLetter } from './bank-reference-letter.js'
 import { instant, issuerDid, SLUG } from './common.js'
 import { degreeCertificate } from './degree-certificate.js'
