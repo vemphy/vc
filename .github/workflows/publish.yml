@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # tags are needed to see whether the Go module version exists
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -54,5 +56,12 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          # The Go module may already carry this version: it can be tagged ahead
+          # of an npm release. The tag must then point at this same commit.
+          if existing=$(git rev-parse -q --verify "refs/tags/vc-go/v$VERSION^{commit}"); then
+            [ "$existing" = "$(git rev-parse HEAD)" ] && { echo "vc-go/v$VERSION already tags this commit"; exit 0; }
+            echo "::warning::vc-go/v$VERSION already exists at $existing; the Go module keeps that version. Tag the next Go version by hand if vc-go changed."
+            exit 0
+          fi
           git tag "vc-go/v$VERSION"
           git push origin "vc-go/v$VERSION"
