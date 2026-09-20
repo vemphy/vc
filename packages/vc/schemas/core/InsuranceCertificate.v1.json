@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "InsuranceCertificate",
+    "displayName": {
+      "en": "Insurance certificate"
+    }
+  },
+  "properties": {
+    "policyHolderName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Policy holder"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "policyNumber": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Policy number"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 2
+      }
+    },
+    "coverType": {
+      "type": "string",
+      "enum": [
+        "motor",
+        "health",
+        "life",
+        "property",
+        "travel",
+        "other"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Cover"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "motor": {
+            "en": "Motor"
+          },
+          "health": {
+            "en": "Health"
+          },
+          "life": {
+            "en": "Life"
+          },
+          "property": {
+            "en": "Property"
+          },
+          "travel": {
+            "en": "Travel"
+          },
+          "other": {
+            "en": "Other"
+          }
+        },
+        "order": 3
+      }
+    },
+    "insuredItem": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Insured item"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 4
+      }
+    },
+    "coverFrom": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Cover from"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 5
+      }
+    },
+    "coverUntil": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Cover until"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 6
+      }
+    }
+  },
+  "required": [
+    "policyHolderName",
+    "policyNumber",
+    "coverType",
+    "coverFrom",
+    "coverUntil"
+  ]
+}

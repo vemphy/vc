@@ -1,0 +1,102 @@
+{
+  "rule": "$schema must be draft 2020-12",
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": false,
+    "x-vemphy": {
+      "name": "StaffIdCard",
+      "displayName": {
+        "en": "Staff ID card"
+      }
+    },
+    "properties": {
+      "holderName": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+        "x-vemphy": {
+          "label": {
+            "en": "Name"
+          },
+          "disclosable": true,
+          "pii": true,
+          "order": 1
+        }
+      },
+      "staffNumber": {
+        "type": "string",
+        "maxLength": 12,
+        "pattern": "^[A-Z]{1,3}-\\d{3,8}$",
+        "x-vemphy": {
+          "label": {
+            "en": "Staff number"
+          },
+          "disclosable": false,
+          "pii": true,
+          "order": 2
+        }
+      },
+      "department": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100,
+        "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+        "x-vemphy": {
+          "label": {
+            "en": "Department"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 3
+        }
+      },
+      "grade": {
+        "type": "string",
+        "enum": [
+          "junior",
+          "senior",
+          "lead"
+        ],
+        "x-vemphy": {
+          "label": {
+            "en": "Grade"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 4,
+          "enumLabels": {
+            "junior": {
+              "en": "Junior"
+            },
+            "senior": {
+              "en": "Senior"
+            },
+            "lead": {
+              "en": "Lead"
+            }
+          }
+        }
+      },
+      "issuedOn": {
+        "type": "string",
+        "format": "date",
+        "x-vemphy": {
+          "label": {
+            "en": "Issued on"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 5
+        }
+      }
+    },
+    "required": [
+      "holderName",
+      "staffNumber",
+      "grade",
+      "issuedOn"
+    ]
+  }
+}

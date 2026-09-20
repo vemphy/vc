@@ -1,16 +1,23 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { dirCache } from '../cli/cache.js'
+import { documentLoader, schemaLoader } from './context/loader.js'
 import { slugOf } from './did.js'
 import { verifyCredential, type VerifyDeps } from './verify.js'
 
 const root = new URL('../../../vectors/', import.meta.url)
 const read = (path: string) => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
 
-const expected = read('expected.json') as { now: string; vectors: Record<string, { result: string; reason?: string }> }
+const expected = read('expected.json') as { now: string; vectors: Record<string, { result: string; reason?: string; schemaValid?: boolean }> }
 
-// Resolvers backed by the vectors directory. Nothing here touches the network.
+// vectors/cache is what a verifier's cache holds once it has met the issuers' own types.
+const cache = dirCache(new URL('cache/', root).pathname)
+
+// Resolvers backed by the vectors directory. Nothing here touches the network: neither loader is given a fetch.
 const deps = (overrides: Partial<VerifyDeps> = {}): VerifyDeps => ({
   now: new Date(expected.now),
+  documentLoader: documentLoader({ cache }),
+  fetchSchema: schemaLoader({ cache }),
   resolveDid: async (did) => read(`keys/${slugOf(did)}.did.json`),
   fetchStatusList: async (url) => {
     const match = /^https:\/\/vemphy\.com\/i\/([a-z]+)\/status\/(\d+)$/.exec(url)
@@ -30,6 +37,46 @@ describe('vectors', () => {
     const outcome = await verifyCredential(read(`claims/${name}.json`), deps())
     expect(outcome.result).toBe(want.result)
     expect(outcome.reason).toBe(want.reason)
+    expect(outcome.schemaValid).toBe(want.schemaValid)
+  })
+})
+
+describe("an issuer's own types", () => {
+  const custom = () => read('claims/gcb-012.json')
+
+  it('cannot be verified offline without their context, and say so', async () => {
+    const bundledOnly = deps({ documentLoader: documentLoader() })
+    expect(await verifyCredential(custom(), bundledOnly)).toMatchObject({ result: 'unknown', reason: 'context_unavailable' })
+  })
+
+  it('fetch a context once, from vemphy.com, and keep it', async () => {
+    const requested: string[] = []
+    const fetch = (async (url: string) => {
+      requested.push(url)
+      return new Response(JSON.stringify(await cache.get(url)))
+    }) as typeof globalThis.fetch
+    const online = deps({ documentLoader: documentLoader({ cache: (await import('./context/loader.js')).memoryCache(), fetch }) })
+    expect((await verifyCredential(custom(), online)).result).toBe('valid')
+    expect((await verifyCredential(custom(), online)).result).toBe('valid')
+    expect(requested).toEqual(['https://vemphy.com/ns/i/gcb/StaffIdCard/v1'])
+  })
+
+  it('verify without their schema; schemaValid is then absent', async () => {
+    const outcome = await verifyCredential(custom(), deps({ fetchSchema: async () => Promise.reject(new Error('offline')) }))
+    expect(outcome.result).toBe('valid')
+    expect(outcome.schemaValid).toBeUndefined()
+  })
+
+  it('are never checked against a schema document that breaks the rules', async () => {
+    const document = await cache.get('https://vemphy.com/schemas/i/gcb/StaffIdCard/v1.json')
+    const hostile = structuredClone(document) as any
+    hostile.properties.credentialSubject.properties.holderName.pattern = '^(?=a)(a+)+$'
+    const outcome = await verifyCredential(custom(), deps({ fetchSchema: async () => hostile }))
+    expect(outcome).toMatchObject({ result: 'valid', schemaValid: false })
+  })
+
+  it('keep the answer when the subject does not match the schema', async () => {
+    expect(await verifyCredential(read('claims/gcb-016.json'), deps())).toMatchObject({ result: 'valid', schemaValid: false })
   })
 })
 
@@ -40,7 +87,8 @@ describe('verifyCredential', () => {
     const outcome = await verifyCredential(good(), deps())
     expect(outcome).toEqual({
       result: 'valid',
-      checks: ['shape', 'did', 'key', 'key_window', 'signature', 'status_list', 'not_revoked', 'validity_period'].map(
+      schemaValid: true,
+      checks: ['shape', 'context', 'did', 'key', 'key_window', 'signature', 'status_list', 'not_revoked', 'validity_period'].map(
         (name) => ({ name, ok: true }),
       ),
     })

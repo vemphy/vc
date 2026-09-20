@@ -1,0 +1,41 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/core/BankBalanceLetter/v1"
+  ],
+  "id": "urn:vemphy:claim:GCB-FCZN-RQF7",
+  "type": [
+    "VerifiableCredential",
+    "BankBalanceLetter"
+  ],
+  "issuer": "did:web:vemphy.com:i:gcb",
+  "validFrom": "2026-05-04T09:00:00Z",
+  "validUntil": "2026-08-04T09:00:00Z",
+  "credentialSchema": {
+    "id": "https://vemphy.com/schemas/core/BankBalanceLetter/v1.json",
+    "type": "JsonSchema"
+  },
+  "credentialSubject": {
+    "accountHolderName": "Ama Serwaa Mensah",
+    "accountType": "savings",
+    "accountNumberLast4": "0042",
+    "balanceAmount": "48210.75",
+    "currency": "GHS",
+    "balanceAsAt": "2026-05-29"
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/gcb/status/1#94579",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "94579",
+    "statusListCredential": "https://vemphy.com/i/gcb/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2026-05-04T09:00:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:gcb#key-2",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z4KFzQJi12GqTUrz5pEm4XjMAzngEU4NK7tBUMdrNBr91pCzVxBeVx6NKHih2PaakCMXibiZtQskgVh26YMRh988x"
+  }
+}

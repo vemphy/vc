@@ -1,0 +1,396 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vemphy.com/schemas/meta/claim-schema/v1.json",
+  "title": "Vemphy claim schema",
+  "description": "The subset of JSON Schema 2020-12 a Vemphy claim type may use. A claim schema describes credentialSubject: a flat object of leaf fields. Rules this document cannot express (required names exist, order is unique, enumLabels keys are enum values, bounds are ordered, pattern syntax) are checked in code by @vemphy/vc and vc-go.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "type",
+    "additionalProperties",
+    "x-vemphy",
+    "properties"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "type": {
+      "const": "object"
+    },
+    "additionalProperties": {
+      "const": false
+    },
+    "x-vemphy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "displayName"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][a-zA-Z0-9]{1,39}$",
+          "not": {
+            "$ref": "#/$defs/reserved"
+          }
+        },
+        "displayName": {
+          "$ref": "#/$defs/labels"
+        }
+      }
+    },
+    "properties": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 30,
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z0-9]{1,39}$",
+        "not": {
+          "$ref": "#/$defs/reserved"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/leaf"
+      }
+    },
+    "required": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 30,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "reserved": {
+      "description": "Every term of https://www.w3.org/ns/credentials/v2. That context is protected, so none of them can be redefined.",
+      "enum": [
+        "...",
+        "BitstringStatusList",
+        "BitstringStatusListCredential",
+        "BitstringStatusListEntry",
+        "DataIntegrityProof",
+        "EnvelopedVerifiableCredential",
+        "EnvelopedVerifiablePresentation",
+        "JsonSchema",
+        "JsonSchemaCredential",
+        "VerifiableCredential",
+        "VerifiablePresentation",
+        "_sd",
+        "_sd_alg",
+        "aud",
+        "cnf",
+        "description",
+        "digestMultibase",
+        "digestSRI",
+        "exp",
+        "iat",
+        "id",
+        "iss",
+        "jku",
+        "kid",
+        "mediaType",
+        "name",
+        "nbf",
+        "sub",
+        "type",
+        "x5u"
+      ]
+    },
+    "labels": {
+      "type": "object",
+      "required": [
+        "en"
+      ],
+      "maxProperties": 20,
+      "propertyNames": {
+        "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      }
+    },
+    "leaf": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/text"
+        },
+        {
+          "$ref": "#/$defs/formatted"
+        },
+        {
+          "$ref": "#/$defs/choice"
+        },
+        {
+          "$ref": "#/$defs/integer"
+        },
+        {
+          "$ref": "#/$defs/boolean"
+        }
+      ]
+    },
+    "text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "maxLength",
+        "x-vemphy"
+      ],
+      "properties": {
+        "type": {
+          "const": "string"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "x-vemphy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "disclosable",
+            "pii",
+            "order"
+          ],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/labels"
+            },
+            "disclosable": {
+              "type": "boolean"
+            },
+            "pii": {
+              "type": "boolean"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "kind": {
+              "enum": [
+                "decimal",
+                "multiline"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "formatted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "format",
+        "x-vemphy"
+      ],
+      "properties": {
+        "type": {
+          "const": "string"
+        },
+        "format": {
+          "enum": [
+            "date",
+            "date-time",
+            "email",
+            "uri"
+          ]
+        },
+        "x-vemphy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "disclosable",
+            "pii",
+            "order"
+          ],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/labels"
+            },
+            "disclosable": {
+              "type": "boolean"
+            },
+            "pii": {
+              "type": "boolean"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        }
+      }
+    },
+    "choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "enum",
+        "x-vemphy"
+      ],
+      "properties": {
+        "type": {
+          "const": "string"
+        },
+        "enum": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "x-vemphy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "disclosable",
+            "pii",
+            "order"
+          ],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/labels"
+            },
+            "disclosable": {
+              "type": "boolean"
+            },
+            "pii": {
+              "type": "boolean"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "enumLabels": {
+              "type": "object",
+              "maxProperties": 50,
+              "additionalProperties": {
+                "$ref": "#/$defs/labels"
+              }
+            }
+          }
+        }
+      }
+    },
+    "integer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "minimum",
+        "maximum",
+        "x-vemphy"
+      ],
+      "properties": {
+        "type": {
+          "const": "integer"
+        },
+        "minimum": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "maximum": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "x-vemphy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "disclosable",
+            "pii",
+            "order"
+          ],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/labels"
+            },
+            "disclosable": {
+              "type": "boolean"
+            },
+            "pii": {
+              "type": "boolean"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        }
+      }
+    },
+    "boolean": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "x-vemphy"
+      ],
+      "properties": {
+        "type": {
+          "const": "boolean"
+        },
+        "x-vemphy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "disclosable",
+            "pii",
+            "order"
+          ],
+          "properties": {
+            "label": {
+              "$ref": "#/$defs/labels"
+            },
+            "disclosable": {
+              "type": "boolean"
+            },
+            "pii": {
+              "type": "boolean"
+            },
+            "order": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          }
+        }
+      }
+    }
+  }
+}

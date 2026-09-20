@@ -1,5 +1,5 @@
 import { decodeMultikey } from './multibase.js'
-import { type DidDocument, didDocumentSchema } from './schema/credential.js'
+import { type DidDocument, isDidDocument } from './envelope.js'
 
 const DID_PATTERN = /^did:web:vemphy\.com:i:([a-z]{2,4})$/
 
@@ -17,7 +17,8 @@ export function didToUrl(did: string): string {
 
 /** Validates a DID document and checks that it describes `did`. */
 export function parseDidDocument(input: unknown, did: string): DidDocument {
-  const doc = didDocumentSchema.parse(input)
+  if (!isDidDocument(input)) throw new Error('not a DID document')
+  const doc = input
   if (doc.id !== did) throw new Error(`DID document is for ${doc.id}, not ${did}`)
   return doc
 }

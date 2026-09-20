@@ -1,150 +1,163 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { cacheFileName } from '../../cli/cache.js'
+import credentialsV2 from '../context/credentials-v2.json' with { type: 'json' }
+import metaSchema from '../../schemas/meta/vemphy-claim-schema.json' with { type: 'json' }
 import {
-  CLAIM_TYPES,
-  credentialSchema,
-  defaultDisclosure,
-  jsonSchemaFor,
-  subjectSchemas,
-  unsignedCredentialSchemaFor,
+  assertNoDroppedTerms,
+  canonicalJson,
+  type ClaimSchema,
+  contextFromSchema,
+  contextUrl,
+  coreTypes,
+  credentialSchemaDocument,
+  displayNameFor,
+  kindOf,
+  labelFor,
+  namespaceOf,
+  orderedKeys,
+  parseContextUrl,
+  parseSchemaUrl,
+  patternProblem,
+  schemaUrl,
+  subjectSchemaFrom,
+  type TypeRef,
+  validateSchema,
+  validateSubject,
+  valueLabelFor,
 } from './index.js'
 
-const minimal = () =>
-  JSON.parse(readFileSync(new URL('../../../../vectors/canon/minimal.json', import.meta.url), 'utf8')) as Record<
-    string,
-    any
-  >
+const root = new URL('../../../../vectors/', import.meta.url)
+const repo = new URL('../../../../', import.meta.url)
+const read = (path: string, base = root) => JSON.parse(readFileSync(new URL(path, base), 'utf8'))
+const names = (dir: string) => readdirSync(new URL(dir, root)).map((f) => f.replace(/\.json$/, ''))
 
-const proof = {
-  type: 'DataIntegrityProof',
-  cryptosuite: 'eddsa-rdfc-2022',
-  created: '2026-01-10T09:00:00Z',
-  verificationMethod: 'did:web:vemphy.com:i:gcb#key-1',
-  proofPurpose: 'assertionMethod',
-  proofValue: 'z3FXQjecWufY46yg5abdVZsXqLhxhueuSoZgNSARiKBk9czhSePTFehP8c3PGfb6a22gkfUKods5D2UAUL5n2Brbx',
-}
+const custom = names('schemas/valid/').map((name) => read(`schemas/valid/${name}.json`) as { ref: TypeRef; schema: ClaimSchema })
+const published = [...coreTypes, ...custom]
 
-const degree = {
-  graduateName: 'Kwame Boateng',
-  studentNumber: '10456789',
-  qualification: 'BSc',
-  programme: 'Computer Science',
-  classification: 'First Class Honours',
-  conferredOn: '2024-11-16',
-}
-
-const employment = {
-  employeeName: 'Efua Asante',
-  jobTitle: 'Senior Accountant',
-  employmentType: 'permanent',
-  startDate: '2021-02-01',
-  currentlyEmployed: true,
-}
-
-describe('subject schemas', () => {
-  it('accepts a well-formed subject of each type', () => {
-    expect(subjectSchemas.BankReferenceLetter.safeParse(minimal().credentialSubject).success).toBe(true)
-    expect(subjectSchemas.DegreeCertificate.safeParse(degree).success).toBe(true)
-    expect(subjectSchemas.EmploymentLetter.safeParse(employment).success).toBe(true)
+describe('the meta-schema', () => {
+  it('reserves exactly the terms of the VC 2.0 context', () => {
+    const terms = Object.keys(credentialsV2['@context']).filter((k) => !k.startsWith('@')).sort()
+    expect(metaSchema.$defs.reserved.enum).toEqual(terms)
   })
 
-  it('returns the input unchanged', () => {
-    const subject = minimal().credentialSubject
-    expect(subjectSchemas.BankReferenceLetter.parse(subject)).toEqual(subject)
+  it.each(published.map((t) => [`${t.ref.issuer ?? 'core'} ${t.ref.name} v${t.ref.version}`, t.schema] as const))('accepts %s', (_, schema) => {
+    expect(validateSchema(schema)).toEqual([])
   })
 
-  it.each([
-    ['an unknown field', { balance: '1000' }],
-    ['a value outside the enum', { accountType: 'offshore' }],
-    ['a date that does not exist', { referenceDate: '2026-02-30' }],
-    ['a date with a time', { referenceDate: '2026-01-10T00:00:00Z' }],
-    ['more than four digits', { accountNumberLast4: '00421' }],
-    ['padded text', { branch: ' Accra ' }],
-    ['empty text', { branch: '' }],
-  ])('rejects a bank reference with %s', (_, patch) => {
-    const subject = { ...minimal().credentialSubject, ...patch }
-    expect(subjectSchemas.BankReferenceLetter.safeParse(subject).success).toBe(false)
+  it.each(names('schemas/invalid/'))('refuses %s', (name) => {
+    const { rule, schema } = read(`schemas/invalid/${name}.json`)
+    expect(validateSchema(schema).length, rule).toBeGreaterThan(0)
   })
 
-  it('rejects a degree without a required field or with an extra one', () => {
-    const { conferredOn: _, ...missing } = degree
-    expect(subjectSchemas.DegreeCertificate.safeParse(missing).success).toBe(false)
-    expect(subjectSchemas.DegreeCertificate.safeParse({ ...degree, gpa: '3.9' }).success).toBe(false)
-    expect(subjectSchemas.DegreeCertificate.safeParse({ ...degree, conferredOn: '16/11/2024' }).success).toBe(false)
-  })
-
-  it('applies the employment date rules', () => {
-    const parse = (patch: object) => subjectSchemas.EmploymentLetter.safeParse({ ...employment, ...patch }).success
-    expect(parse({ currentlyEmployed: false, endDate: '2025-06-30' })).toBe(true)
-    expect(parse({ endDate: '2025-06-30' })).toBe(false)
-    expect(parse({ currentlyEmployed: false, endDate: '2020-01-01' })).toBe(false)
-    expect(parse({ employmentType: 'volunteer' })).toBe(false)
-    expect(parse({ currentlyEmployed: 'yes' })).toBe(false)
+  it.each([null, 42, 'text', []])('refuses %j', (input) => {
+    expect(validateSchema(input).length).toBeGreaterThan(0)
   })
 })
 
-describe('credential schema', () => {
-  const signed = (): Record<string, any> => ({ ...minimal(), proof })
-
-  it('accepts a signed claim and an unsigned one', () => {
-    expect(credentialSchema.safeParse(signed()).success).toBe(true)
-    expect(unsignedCredentialSchemaFor('BankReferenceLetter').safeParse(minimal()).success).toBe(true)
-  })
-
-  it('accepts a claim with no validUntil', () => {
-    const { validUntil: _, ...open } = signed()
-    expect(credentialSchema.safeParse(open).success).toBe(true)
-  })
-
-  it.each([
-    ['an extra context', (c: any) => c['@context'].push('https://example.com/ctx')],
-    ['contexts in the wrong order', (c: any) => c['@context'].reverse()],
-    ['an extra type', (c: any) => c.type.push('Other')],
-    ['a subject of another type', (c: any) => (c.credentialSubject = degree)],
-    ['an issuer outside vemphy.com', (c: any) => (c.issuer = 'did:web:example.com:i:gcb')],
-    ['an uppercase slug in the DID', (c: any) => (c.issuer = 'did:web:vemphy.com:i:GCB')],
-    ['a code from another issuer', (c: any) => (c.id = 'urn:vemphy:claim:UG-7K2M-9QXD')],
-    ['a key from another issuer', (c: any) => (c.proof.verificationMethod = 'did:web:vemphy.com:i:ug#key-1')],
-    ['a status list from another issuer', (c: any) => {
-      c.credentialStatus.statusListCredential = 'https://vemphy.com/i/ug/status/1'
-      c.credentialStatus.id = 'https://vemphy.com/i/ug/status/1#94567'
-    }],
-    ['a status id that disagrees with its index', (c: any) => (c.credentialStatus.statusListIndex = '5')],
-    ['an index past the end of the list', (c: any) => {
-      c.credentialStatus.statusListIndex = '131072'
-      c.credentialStatus.id = 'https://vemphy.com/i/gcb/status/1#131072'
-    }],
-    ['validUntil before validFrom', (c: any) => (c.validUntil = '2025-01-01T00:00:00Z')],
-    ['another cryptosuite', (c: any) => (c.proof.cryptosuite = 'eddsa-jcs-2022')],
-    ['another proof purpose', (c: any) => (c.proof.proofPurpose = 'authentication')],
-    ['two proofs', (c: any) => (c.proof = [proof, proof])],
-    ['an unknown top-level member', (c: any) => (c.evidence = [])],
-  ])('rejects %s', (_, mutate) => {
-    const claim = structuredClone(signed())
-    mutate(claim)
-    expect(credentialSchema.safeParse(claim).success).toBe(false)
-  })
+describe('patterns', () => {
+  const { allowed, refused } = read('patterns.json') as { allowed: string[]; refused: string[] }
+  it.each(allowed)('allows %s', (pattern) => expect(patternProblem(pattern)).toBeUndefined())
+  it.each(refused)('refuses %s', (pattern) => expect(patternProblem(pattern)).toBeTypeOf('string'))
 })
 
-describe('disclosure and JSON Schema', () => {
-  it.each(CLAIM_TYPES)('%s discloses only fields it defines', (type) => {
-    const fields = Object.keys(subjectSchemas[type].shape)
-    expect(defaultDisclosure[type].length).toBeGreaterThan(0)
-    for (const field of defaultDisclosure[type]) expect(fields).toContain(field)
-  })
-
-  it.each(CLAIM_TYPES)('%s exports a closed JSON Schema', (type) => {
-    const schema = jsonSchemaFor(type)
-    expect(schema.type).toBe('object')
-    expect(schema.additionalProperties).toBe(false)
-    expect(Object.keys(schema.properties as object).sort()).toEqual(Object.keys(subjectSchemas[type].shape).sort())
-  })
-
-  it('every subject field is a term in the claims context', () => {
-    const context = JSON.parse(readFileSync(new URL('../context/claims-v1.json', import.meta.url), 'utf8'))['@context']
-    for (const type of CLAIM_TYPES) {
-      expect(context, type).toHaveProperty(type)
-      for (const field of Object.keys(subjectSchemas[type].shape)) expect(context, field).toHaveProperty(field)
+describe('subjects', () => {
+  for (const name of names('schemas/subjects/')) {
+    const fixture = read(`schemas/subjects/${name}.json`)
+    const loaded = read(fixture.schema, repo)
+    const schema: ClaimSchema = loaded.schema ?? loaded
+    type Case = { note: string; set?: object; unset?: string[] }
+    const build = (c: Case) => {
+      const subject = { ...fixture.base, ...c.set }
+      for (const key of c.unset ?? []) delete subject[key]
+      return subject
     }
+    it.each(fixture.accept as Case[])(`${name} accepts $note`, (c) => expect(validateSubject(schema, build(c))).toEqual([]))
+    it.each(fixture.reject as Case[])(`${name} rejects $note`, (c) =>
+      expect(validateSubject(schema, build(c)).length).toBeGreaterThan(0),
+    )
+  }
+
+  it('names every failing field', () => {
+    const schema = custom.find((t) => t.ref.name === 'StaffIdCard' && t.ref.version === 1)!.schema
+    const problems = validateSubject(schema, { holderName: ' Ama', grade: 'principal', issuedOn: '2026-02-30', extra: 1 })
+    expect(problems.map((p) => p.field).sort()).toEqual(['', 'grade', 'holderName', 'issuedOn', 'staffNumber'])
+  })
+
+  it('will not compile a schema that breaks the rules', () => {
+    const { schema } = read('schemas/invalid/pattern-lookahead.json')
+    expect(() => validateSubject(schema, {})).toThrow(/not a Vemphy claim schema/)
+  })
+})
+
+describe('contexts', () => {
+  it.each(published.map((t) => [contextUrl(t.ref), t] as const))('%s matches vectors/cache and drops nothing', async (url, { ref, schema }) => {
+    const context = contextFromSchema(schema, namespaceOf(ref))
+    expect(canonicalJson(context)).toBe(readFileSync(new URL(`cache/${cacheFileName(url)}`, root), 'utf8'))
+    await assertNoDroppedTerms(schema, context, namespaceOf(ref))
+  })
+
+  it('notices a context that leaves a property out', async () => {
+    const { ref, schema } = custom[0]!
+    const context = contextFromSchema(schema, namespaceOf(ref))
+    const last = Object.keys(schema.properties).at(-1)!
+    delete context['@context'][last]
+    await expect(assertNoDroppedTerms(schema, context, namespaceOf(ref))).rejects.toThrow(`drops ${last}`)
+  })
+
+  it('notices a context that maps a property somewhere else', async () => {
+    const { ref, schema } = custom[0]!
+    const context = contextFromSchema(schema, 'https://example.com/other#')
+    await expect(assertNoDroppedTerms(schema, context, namespaceOf(ref))).rejects.toThrow(/drops/)
+  })
+
+  it('reads a type back out of its URLs', () => {
+    const ref = { issuer: 'gcb', name: 'StaffIdCard', version: 2 }
+    expect(parseContextUrl(contextUrl(ref))).toEqual(ref)
+    expect(parseSchemaUrl(schemaUrl(ref))).toEqual(ref)
+    expect(parseContextUrl('https://vemphy.com/ns/core/Attestation/v1')).toEqual({ name: 'Attestation', version: 1 })
+    for (const url of ['https://vemphy.com/ns/claims/v1', 'https://vemphy.com/ns/core/attestation/v1', 'https://vemphy.com/ns/i/GCB/X1/v1', 'https://vemphy.com/ns/core/Attestation/v0']) {
+      expect(parseContextUrl(url)).toBeUndefined()
+    }
+  })
+})
+
+describe('schema documents', () => {
+  it.each(published.map((t) => [schemaUrl(t.ref), t] as const))('%s matches vectors/cache and unwraps to the schema', (url, { schema }) => {
+    const document = credentialSchemaDocument(schema, url)
+    expect(canonicalJson(document)).toBe(readFileSync(new URL(`cache/${cacheFileName(url)}`, root), 'utf8'))
+    expect(subjectSchemaFrom(document)).toEqual(schema)
+  })
+
+  it.each([null, {}, { properties: {} }, { properties: { credentialSubject: 'x' } }])('finds no schema in %j', (document) => {
+    expect(subjectSchemaFrom(document)).toBeUndefined()
+  })
+})
+
+describe('labels', () => {
+  const v2 = custom.find((t) => t.ref.name === 'StaffIdCard' && t.ref.version === 2)!.schema
+  const all = custom.find((t) => t.ref.name === 'AllKinds')!.schema
+
+  it('picks the best language on offer and falls back to en', () => {
+    expect(labelFor(v2, 'holderName')).toBe('Card holder')
+    expect(labelFor(v2, 'holderName', 'fr-CA')).toBe('Titulaire')
+    expect(labelFor(v2, 'holderName', ['de', 'fr'])).toBe('Titulaire')
+    expect(labelFor(v2, 'holderName', 'de')).toBe('Card holder')
+    expect(labelFor(all, 'text', 'pt-br')).toBe('Texto')
+    expect(labelFor(all, 'text', 'pt')).toBe('Text')
+    expect(labelFor(v2, 'nothing')).toBeUndefined()
+    expect(labelFor(v2, 'toString')).toBeUndefined()
+    expect(displayNameFor(all, 'fr')).toBe('Tous les types de champ')
+  })
+
+  it('labels enum values, falling back to the value', () => {
+    expect(valueLabelFor(all, 'choice', 'a', 'fr')).toBe('Choix A')
+    expect(valueLabelFor(all, 'choice', 'b')).toBe('b')
+  })
+
+  it('orders fields and names their kind', () => {
+    expect(orderedKeys(all).map((k) => kindOf(all.properties[k]!))).toEqual([
+      'text', 'text', 'multiline', 'decimal', 'integer', 'integer', 'boolean', 'date', 'datetime', 'email', 'uri', 'choice',
+    ])
   })
 })

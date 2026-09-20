@@ -1,0 +1,17 @@
+<https://vemphy.com/i/gcb/status/1#94578> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/ns/credentials/status#BitstringStatusListEntry> .
+<https://vemphy.com/i/gcb/status/1#94578> <https://www.w3.org/ns/credentials/status#statusListCredential> <https://vemphy.com/i/gcb/status/1> .
+<https://vemphy.com/i/gcb/status/1#94578> <https://www.w3.org/ns/credentials/status#statusListIndex> "94578" .
+<https://vemphy.com/i/gcb/status/1#94578> <https://www.w3.org/ns/credentials/status#statusPurpose> "revocation" .
+<https://vemphy.com/schemas/core/Attestation/v1.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#JsonSchema> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://vemphy.com/ns/core/Attestation/v1#Attestation> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <https://www.w3.org/2018/credentials#credentialSchema> <https://vemphy.com/schemas/core/Attestation/v1.json> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <https://www.w3.org/2018/credentials#credentialStatus> <https://vemphy.com/i/gcb/status/1#94578> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <https://www.w3.org/2018/credentials#credentialSubject> _:c14n0 .
+<urn:vemphy:claim:GCB-R0DR-HP18> <https://www.w3.org/2018/credentials#issuer> <did:web:vemphy.com:i:gcb> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <https://www.w3.org/2018/credentials#validFrom> "2026-05-04T09:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<urn:vemphy:claim:GCB-R0DR-HP18> <https://www.w3.org/2018/credentials#validUntil> "2026-08-04T09:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:c14n0 <https://vemphy.com/ns/core/Attestation/v1#reference> "GCB/INT/2026/0412" .
+_:c14n0 <https://vemphy.com/ns/core/Attestation/v1#statement> "Kofi Boateng Enterprise has banked with us since 2017.\nThis letter is given at the customer’s request." .
+_:c14n0 <https://vemphy.com/ns/core/Attestation/v1#subjectName> "Kofi Boateng Enterprise" .
+_:c14n0 <https://vemphy.com/ns/core/Attestation/v1#title> "Letter of introduction" .

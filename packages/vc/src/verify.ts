@@ -1,7 +1,11 @@
-import type { DocumentLoader } from './context/loader.js'
+import { type DocumentLoader, schemaLoader, staticLoader } from './context/loader.js'
 import { findKey, parseDidDocument, type ResolvedKey } from './did.js'
+import { type Credential, credentialProblem, type DidDocument, type StatusListCredential, statusListProblem } from './envelope.js'
 import { verifyProof } from './proof.js'
-import { credentialSchema, type DidDocument, statusListCredentialSchema } from './schema/credential.js'
+import { coreSchema } from './schema/core.js'
+import { subjectSchemaFrom } from './schema/document.js'
+import type { ClaimSchema } from './schema/types.js'
+import { validateSchema, validateSubject } from './schema/validate.js'
 import { decodeList, getBit } from './status.js'
 
 export type Result = 'valid' | 'revoked' | 'expired' | 'unknown'
@@ -12,6 +16,7 @@ export type Result = 'valid' | 'revoked' | 'expired' | 'unknown'
  */
 export type Reason =
   | 'malformed'
+  | 'context_unavailable'
   | 'did_unresolvable'
   | 'key_not_found'
   | 'key_window_violation'
@@ -20,7 +25,18 @@ export type Reason =
 
 export type Check = { name: string; ok: boolean }
 
-export type Outcome = { result: Result; reason?: Reason; checks: Check[] }
+export type Outcome = {
+  result: Result
+  reason?: Reason
+  checks: Check[]
+  /**
+   * Whether the subject matches the schema the claim names. Extra information
+   * for whoever wants it: it never changes `result`, which signature, status
+   * and dates decide. Absent when the signature did not hold or the schema
+   * could not be had.
+   */
+  schemaValid?: boolean
+}
 
 export interface VerifyDeps {
   /** The instant to verify at. This function never reads a clock. */
@@ -29,9 +45,18 @@ export interface VerifyDeps {
   resolveDid(did: string): Promise<unknown>
   /** Returns the status list credential at a URL. */
   fetchStatusList(url: string): Promise<unknown>
-  /** For tests. Defaults to the bundled contexts. */
+  /**
+   * Loads JSON-LD contexts. Defaults to the bundled ones, offline: the W3C
+   * context and every core type. Pass `documentLoader({ cache, fetch })` to
+   * verify claims of an issuer's own types.
+   */
   documentLoader?: DocumentLoader
+  /** Returns the schema document at a URL. Defaults to the bundled core schemas, offline. */
+  fetchSchema?(url: string): Promise<unknown>
 }
+
+const bundledContexts = staticLoader()
+const bundledSchemas = schemaLoader()
 
 /**
  * Verifies a Vemphy claim. Never throws: whatever goes wrong, the answer is
@@ -43,16 +68,25 @@ export interface VerifyDeps {
 export async function verifyCredential(input: unknown, deps: VerifyDeps): Promise<Outcome> {
   const checks: Check[] = []
   const pass = (name: string) => void checks.push({ name, ok: true })
+  let schemaValid: boolean | undefined
   const stop = (name: string, result: Result, reason?: Reason): Outcome => {
     checks.push({ name, ok: false })
-    return reason ? { result, reason, checks } : { result, checks }
+    return { result, ...(reason && { reason }), checks, ...(schemaValid !== undefined && { schemaValid }) }
   }
+  const loader = deps.documentLoader ?? bundledContexts
 
   // 1. Shape.
-  const parsed = credentialSchema.safeParse(input)
-  if (!parsed.success) return stop('shape', 'unknown', 'malformed')
-  const credential = parsed.data
+  if (credentialProblem(input) !== undefined) return stop('shape', 'unknown', 'malformed')
+  const credential = input as Credential
   pass('shape')
+
+  // The vocabulary the claim is written in. Without it nothing can be said about the signature.
+  try {
+    await loader(credential['@context'][1])
+  } catch {
+    return stop('context', 'unknown', 'context_unavailable')
+  }
+  pass('context')
 
   // 2. Issuer key.
   let didDocument: DidDocument
@@ -72,10 +106,11 @@ export async function verifyCredential(input: unknown, deps: VerifyDeps): Promis
   pass('key_window')
 
   // 4. Signature.
-  if (!(await signatureHolds(input as Record<string, unknown>, key, deps.documentLoader))) {
+  if (!(await signatureHolds(input as Record<string, unknown>, key, loader))) {
     return stop('signature', 'unknown', 'signature_failure')
   }
   pass('signature')
+  schemaValid = await matchesSchema(credential, deps.fetchSchema ?? bundledSchemas)
 
   // 5. The status list is itself a signed, short-lived credential from the same issuer.
   const bits = await loadStatusList(credential.issuer, credential.credentialStatus.statusListCredential, didDocument, deps)
@@ -93,7 +128,28 @@ export async function verifyCredential(input: unknown, deps: VerifyDeps): Promis
   if (now < from || now >= until) return stop('validity_period', 'expired')
   pass('validity_period')
 
-  return { result: 'valid', checks }
+  return { result: 'valid', checks, ...(schemaValid !== undefined && { schemaValid }) }
+}
+
+// A claim issued under claims/v1 names no schema; version 1 of the core type of the same name describes it.
+async function matchesSchema(credential: Credential, fetchSchema: (url: string) => Promise<unknown>): Promise<boolean | undefined> {
+  let schema: unknown
+  if (credential.credentialSchema === undefined) {
+    schema = coreSchema(credential.type[1], 1)
+  } else {
+    try {
+      schema = subjectSchemaFrom(await fetchSchema(credential.credentialSchema.id))
+    } catch {
+      return undefined
+    }
+  }
+  if (schema === undefined) return undefined
+  try {
+    if (validateSchema(schema).length > 0) return false
+    return validateSubject(schema as ClaimSchema, credential.credentialSubject).length === 0
+  } catch {
+    return false
+  }
 }
 
 function lookUp(doc: DidDocument, verificationMethod: string): ResolvedKey | undefined {
@@ -127,7 +183,8 @@ async function loadStatusList(
 ): Promise<Uint8Array | undefined> {
   try {
     const raw = await deps.fetchStatusList(url)
-    const list = statusListCredentialSchema.parse(raw)
+    if (statusListProblem(raw) !== undefined) return undefined
+    const list = raw as StatusListCredential
     if (list.id !== url || list.issuer !== issuer) return undefined
 
     const now = deps.now.getTime()
@@ -135,7 +192,7 @@ async function loadStatusList(
 
     const key = lookUp(didDocument, list.proof.verificationMethod)
     if (!key || !usableAt(key, list.proof.created)) return undefined
-    if (!(await signatureHolds(raw as Record<string, unknown>, key, deps.documentLoader))) return undefined
+    if (!(await signatureHolds(raw as Record<string, unknown>, key, deps.documentLoader ?? bundledContexts))) return undefined
 
     return await decodeList(list.credentialSubject.encodedList)
   } catch {

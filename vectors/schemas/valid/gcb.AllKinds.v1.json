@@ -1,0 +1,189 @@
+{
+  "ref": {
+    "issuer": "gcb",
+    "name": "AllKinds",
+    "version": 1
+  },
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "x-vemphy": {
+      "name": "AllKinds",
+      "displayName": {
+        "en": "Every kind of field",
+        "fr": "Tous les types de champ"
+      }
+    },
+    "properties": {
+      "text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+        "x-vemphy": {
+          "label": {
+            "en": "Text",
+            "fr": "Texte",
+            "pt-BR": "Texto"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 1
+        }
+      },
+      "short": {
+        "type": "string",
+        "maxLength": 5,
+        "x-vemphy": {
+          "label": {
+            "en": "At most five characters"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 2
+        }
+      },
+      "long": {
+        "type": "string",
+        "maxLength": 2000,
+        "x-vemphy": {
+          "label": {
+            "en": "Long text"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 3,
+          "kind": "multiline"
+        }
+      },
+      "amount": {
+        "type": "string",
+        "maxLength": 18,
+        "pattern": "^(0|[1-9]\\d{0,14})(\\.\\d{2})?$",
+        "x-vemphy": {
+          "label": {
+            "en": "Amount"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 4,
+          "kind": "decimal"
+        }
+      },
+      "count": {
+        "type": "integer",
+        "minimum": -9007199254740991,
+        "maximum": 9007199254740991,
+        "x-vemphy": {
+          "label": {
+            "en": "Count"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 5
+        }
+      },
+      "percent": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100,
+        "x-vemphy": {
+          "label": {
+            "en": "Percent"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 6
+        }
+      },
+      "flag": {
+        "type": "boolean",
+        "x-vemphy": {
+          "label": {
+            "en": "Flag"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 7
+        }
+      },
+      "day": {
+        "type": "string",
+        "format": "date",
+        "x-vemphy": {
+          "label": {
+            "en": "Day"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 8
+        }
+      },
+      "instant": {
+        "type": "string",
+        "format": "date-time",
+        "x-vemphy": {
+          "label": {
+            "en": "Instant"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 9
+        }
+      },
+      "email": {
+        "type": "string",
+        "format": "email",
+        "x-vemphy": {
+          "label": {
+            "en": "Email"
+          },
+          "disclosable": true,
+          "pii": true,
+          "order": 10
+        }
+      },
+      "link": {
+        "type": "string",
+        "format": "uri",
+        "x-vemphy": {
+          "label": {
+            "en": "Link"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 11
+        }
+      },
+      "choice": {
+        "type": "string",
+        "enum": [
+          "a",
+          "b"
+        ],
+        "x-vemphy": {
+          "label": {
+            "en": "Choice"
+          },
+          "disclosable": true,
+          "pii": false,
+          "order": 12,
+          "enumLabels": {
+            "a": {
+              "en": "Option A",
+              "fr": "Choix A"
+            }
+          }
+        }
+      }
+    },
+    "required": [
+      "text",
+      "count",
+      "flag",
+      "day",
+      "instant"
+    ]
+  }
+}

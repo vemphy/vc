@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "BankReferenceLetter",
+    "displayName": {
+      "en": "Bank reference letter"
+    }
+  },
+  "properties": {
+    "accountHolderName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Account holder"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "accountType": {
+      "type": "string",
+      "enum": [
+        "current",
+        "savings",
+        "business"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Account type"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "current": {
+            "en": "Current"
+          },
+          "savings": {
+            "en": "Savings"
+          },
+          "business": {
+            "en": "Business"
+          }
+        },
+        "order": 2
+      }
+    },
+    "accountNumberLast4": {
+      "type": "string",
+      "maxLength": 4,
+      "pattern": "^\\d{4}$",
+      "x-vemphy": {
+        "label": {
+          "en": "Account number, last 4 digits"
+        },
+        "disclosable": false,
+        "pii": true,
+        "order": 3
+      }
+    },
+    "accountOpenedOn": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Account held since"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 4
+      }
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Branch"
+        },
+        "disclosable": false,
+        "pii": false,
+        "order": 5
+      }
+    },
+    "standing": {
+      "type": "string",
+      "enum": [
+        "satisfactory",
+        "unsatisfactory"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Standing"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "satisfactory": {
+            "en": "Satisfactory"
+          },
+          "unsatisfactory": {
+            "en": "Unsatisfactory"
+          }
+        },
+        "order": 6
+      }
+    },
+    "addressedTo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Addressed to"
+        },
+        "disclosable": false,
+        "pii": false,
+        "order": 7
+      }
+    },
+    "referenceDate": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Date of letter"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 8
+      }
+    }
+  },
+  "required": [
+    "accountHolderName",
+    "accountType",
+    "accountNumberLast4",
+    "accountOpenedOn",
+    "branch",
+    "standing",
+    "referenceDate"
+  ]
+}

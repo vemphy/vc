@@ -1,0 +1,47 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/i/gcb/AllKinds/v1"
+  ],
+  "id": "urn:vemphy:claim:GCB-CF6S-AGDM",
+  "type": [
+    "VerifiableCredential",
+    "AllKinds"
+  ],
+  "issuer": "did:web:vemphy.com:i:gcb",
+  "validFrom": "2026-05-04T09:00:00Z",
+  "validUntil": "2026-08-04T09:00:00Z",
+  "credentialSchema": {
+    "id": "https://vemphy.com/schemas/i/gcb/AllKinds/v1.json",
+    "type": "JsonSchema"
+  },
+  "credentialSubject": {
+    "text": "Plain",
+    "short": "😀😀",
+    "long": "one\ntwo",
+    "amount": "12500.50",
+    "count": -9007199254740991,
+    "percent": 100,
+    "flag": false,
+    "day": "2024-02-29",
+    "instant": "2026-05-04T09:00:00.123+01:00",
+    "email": "ama.mensah@gcb.com.gh",
+    "link": "https://vemphy.com/v/GCB-7K2M-9QXP",
+    "choice": "a"
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/gcb/status/1#94581",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "94581",
+    "statusListCredential": "https://vemphy.com/i/gcb/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2026-05-04T09:00:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:gcb#key-2",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z3PfQhZcnUVNTu1DyvPvGEFeb1Np4APrMo6UhbwGVHn8P6TSkdjgkWgE9hBDbJxfVyTYSnwte1mronvomPGfLx4wV"
+  }
+}

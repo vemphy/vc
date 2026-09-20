@@ -1,0 +1,43 @@
+{
+  "schema": "packages/vc/schemas/core/BankBalanceLetter.v1.json",
+  "base": {
+    "accountHolderName": "Ama Serwaa Mensah",
+    "accountType": "savings",
+    "accountNumberLast4": "0042",
+    "balanceAmount": "48210.75",
+    "currency": "GHS",
+    "balanceAsAt": "2026-05-29"
+  },
+  "accept": [
+    {
+      "note": "the base subject"
+    },
+    {
+      "note": "with branch and addressee",
+      "set": {
+        "branch": "Accra High Street",
+        "addressedTo": "The Consular Section"
+      }
+    }
+  ],
+  "reject": [
+    {
+      "note": "a currency outside the list",
+      "set": {
+        "currency": "NGN"
+      }
+    },
+    {
+      "note": "five digits of account number",
+      "set": {
+        "accountNumberLast4": "00421"
+      }
+    },
+    {
+      "note": "a balance as a number",
+      "set": {
+        "balanceAmount": 48210.75
+      }
+    }
+  ]
+}

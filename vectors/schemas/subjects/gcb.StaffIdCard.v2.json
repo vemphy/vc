@@ -1,0 +1,28 @@
+{
+  "schema": "vectors/schemas/valid/gcb.StaffIdCard.v2.json",
+  "base": {
+    "holderName": "Ama Serwaa Mensah",
+    "staffNumber": "GCB-00417",
+    "grade": "senior",
+    "issuedOn": "2026-01-12"
+  },
+  "accept": [
+    {
+      "note": "the base subject"
+    },
+    {
+      "note": "with the field version 2 added",
+      "set": {
+        "expiresOn": "2028-01-12"
+      }
+    }
+  ],
+  "reject": [
+    {
+      "note": "an impossible expiry date",
+      "set": {
+        "expiresOn": "2028-02-30"
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "Attestation",
+    "displayName": {
+      "en": "General statement"
+    }
+  },
+  "properties": {
+    "subjectName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "About"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Title"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 2
+      }
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Statement"
+        },
+        "disclosable": true,
+        "pii": true,
+        "kind": "multiline",
+        "order": 3
+      }
+    },
+    "reference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Reference"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 4
+      }
+    }
+  },
+  "required": [
+    "subjectName",
+    "title",
+    "statement"
+  ]
+}

@@ -1,4 +1,4 @@
-// Writes vectors/{claims,keys,status,canon} and vectors/expected.json.
+// Writes vectors/{claims,keys,status,canon,schemas,cache}, vectors/patterns.json and vectors/expected.json.
 //
 // Everything here is derived from fixed inputs, and Ed25519 signatures are
 // deterministic, so running this twice produces identical files. CI runs it
@@ -16,8 +16,24 @@ import { canonicalize } from '../src/canon.js'
 import { ALPHABET, formatCode, isIssuable } from '../src/code.js'
 import { CLAIMS_V1, CREDENTIALS_V2 } from '../src/context/urls.js'
 import { encodeMultikey } from '../src/multibase.js'
-import { CLAIM_TYPES, defaultDisclosure, subjectSchemas } from '../src/schema/index.js'
+import { documentLoader } from '../src/context/loader.js'
 import { createProof, memorySigner } from '../src/proof.js'
+import {
+  assertNoDroppedTerms,
+  canonicalJson,
+  type ClaimSchema,
+  contextFromSchema,
+  contextUrl,
+  coreTypes,
+  credentialSchemaDocument,
+  namespaceOf,
+  schemaUrl,
+  type TypeRef,
+  validateSchema,
+  validateSubject,
+} from '../src/schema/index.js'
+import { cacheFileName } from '../cli/cache.js'
+import { customTypes, invalidSchemas, patterns, subjectFixtures } from './vector-schemas.js'
 import { encodeList, LIST_BITS, setBit } from '../src/status.js'
 
 const NOW = '2026-06-01T12:00:00Z'
@@ -124,6 +140,8 @@ type ClaimSpec = {
   name: string
   slug: string
   type: string
+  /** The published type version the claim is issued under. Absent for a claims/v1 claim. */
+  ref?: TypeRef
   subject: Json
   kid: string
   created: string
@@ -131,9 +149,11 @@ type ClaimSpec = {
   validUntil?: string
   list?: number
   index: number
+  /** Its context exists nowhere, so it carries a proof made over something else. */
+  unsignable?: boolean
   /** Applied after signing. */
   alter?: (signed: any) => void
-  expect: { result: string; reason?: string }
+  expect: { result: string; reason?: string; schemaValid?: boolean }
   note: string
 }
 
@@ -147,6 +167,8 @@ const bankSubject = {
   addressedTo: 'The Consular Section',
   referenceDate: '2026-05-04',
 }
+
+const staffCard = { holderName: 'Ama Serwaa Mensah', staffNumber: 'GCB-00417', grade: 'senior', issuedOn: '2026-01-12' }
 
 const gcb = (spec: Partial<ClaimSpec> & Pick<ClaimSpec, 'name' | 'index' | 'expect' | 'note'>): ClaimSpec => ({
   slug: 'gcb',
@@ -277,18 +299,166 @@ const claims: ClaimSpec[] = [
     expect: { result: 'valid' },
     note: 'Signed with key-3 a month before key-3 was revoked.',
   }),
+
+  // ---- claims under a type's own context, with a credentialSchema ----
+  gcb({
+    name: 'gcb-012',
+    index: 94_576,
+    type: 'StaffIdCard',
+    ref: { issuer: 'gcb', name: 'StaffIdCard', version: 1 },
+    subject: staffCard,
+    expect: { result: 'valid' },
+    note: "A claim of one of the issuer's own types, version 1. Version 2 of the type exists; this claim is untouched by it.",
+  }),
+  gcb({
+    name: 'gcb-013',
+    index: 94_577,
+    type: 'StaffIdCard',
+    ref: { issuer: 'gcb', name: 'StaffIdCard', version: 2 },
+    subject: { ...staffCard, expiresOn: '2028-01-12' },
+    expect: { result: 'valid' },
+    note: 'The same type at version 2, with the field version 2 added.',
+  }),
+  gcb({
+    name: 'gcb-014',
+    index: 94_578,
+    type: 'Attestation',
+    ref: { name: 'Attestation', version: 1 },
+    subject: {
+      subjectName: 'Kofi Boateng Enterprise',
+      title: 'Letter of introduction',
+      statement: 'Kofi Boateng Enterprise has banked with us since 2017.\nThis letter is given at the customer’s request.',
+      reference: 'GCB/INT/2026/0412',
+    },
+    expect: { result: 'valid' },
+    note: 'An Attestation: the core type for a one-off statement.',
+  }),
+  gcb({
+    name: 'gcb-015',
+    index: 94_579,
+    type: 'BankBalanceLetter',
+    ref: { name: 'BankBalanceLetter', version: 1 },
+    subject: {
+      accountHolderName: 'Ama Serwaa Mensah',
+      accountType: 'savings',
+      accountNumberLast4: '0042',
+      balanceAmount: '48210.75',
+      currency: 'GHS',
+      balanceAsAt: '2026-05-29',
+    },
+    expect: { result: 'valid' },
+    note: 'A core type with an amount, which is a decimal string and never a number.',
+  }),
+  gcb({
+    name: 'gcb-016',
+    index: 94_580,
+    type: 'StaffIdCard',
+    ref: { issuer: 'gcb', name: 'StaffIdCard', version: 1 },
+    subject: { ...staffCard, grade: 'principal' },
+    expect: { result: 'valid' },
+    note: 'Correctly signed, but grade is not a value its schema allows. The answer is still valid; schemaValid reports the mismatch.',
+  }),
+  gcb({
+    name: 'gcb-017',
+    index: 94_581,
+    type: 'AllKinds',
+    ref: { issuer: 'gcb', name: 'AllKinds', version: 1 },
+    subject: {
+      text: 'Plain',
+      short: '😀😀',
+      long: 'one\ntwo',
+      amount: '12500.50',
+      count: -9007199254740991,
+      percent: 100,
+      flag: false,
+      day: '2024-02-29',
+      instant: '2026-05-04T09:00:00.123+01:00',
+      email: 'ama.mensah@gcb.com.gh',
+      link: 'https://vemphy.com/v/GCB-7K2M-9QXP',
+      choice: 'a',
+    },
+    expect: { result: 'valid' },
+    note: 'Every kind of field at once, so both languages canonicalise integers, booleans, dates and instants alike.',
+  }),
+  {
+    name: 'emp-002',
+    slug: 'emp',
+    type: 'SalaryConfirmation',
+    ref: { name: 'SalaryConfirmation', version: 1 },
+    subject: {
+      employeeName: 'Efua Asante',
+      jobTitle: 'Senior Accountant',
+      grossMonthlySalary: '14500.00',
+      currency: 'GHS',
+      payFrequency: 'monthly',
+      asAt: '2026-05-20',
+    },
+    kid: 'key-1',
+    created: '2026-05-20T14:30:00Z',
+    validFrom: '2026-05-20T14:30:00Z',
+    validUntil: '2026-08-20T14:30:00Z',
+    index: 58_311,
+    expect: { result: 'valid' },
+    note: 'A salary confirmation, a core type.',
+  },
+  {
+    name: 'emp-003',
+    slug: 'emp',
+    type: 'StaffIdCard',
+    ref: { issuer: 'gcb', name: 'StaffIdCard', version: 1 },
+    subject: staffCard,
+    kid: 'key-1',
+    created: '2026-05-20T14:30:00Z',
+    validFrom: '2026-05-20T14:30:00Z',
+    index: 58_312,
+    expect: { result: 'unknown', reason: 'malformed' },
+    note: "Signed by one issuer against another issuer's type. An issuer may use core types and its own, nothing else.",
+  },
+  {
+    name: 'ug-002',
+    slug: 'ug',
+    type: 'Transcript',
+    ref: { issuer: 'ug', name: 'Transcript', version: 1 },
+    subject: { graduateName: 'Kwame Boateng' },
+    kid: 'key-1',
+    created: '2024-11-18T10:00:00Z',
+    validFrom: '2024-11-16T00:00:00Z',
+    index: 1_002,
+    unsignable: true,
+    expect: { result: 'unknown', reason: 'context_unavailable' },
+    note: 'Its context is not bundled and is not in vectors/cache. Offline, nothing can be said about the signature.',
+  },
 ]
 
-async function claim(spec: ClaimSpec): Promise<{ signed: Json; unsigned: Json }> {
+// ---- types ------------------------------------------------------------------
+
+const published = [...coreTypes.map((t) => ({ ...t, file: undefined as string | undefined })), ...customTypes]
+const cacheDocuments: Record<string, unknown> = {}
+for (const { ref, schema } of published) {
+  const problems = validateSchema(schema)
+  if (problems.length > 0) throw new Error(`${ref.name} v${ref.version}: ${problems[0]!.field} ${problems[0]!.message}`)
+  const context = contextFromSchema(schema, namespaceOf(ref))
+  await assertNoDroppedTerms(schema, context, namespaceOf(ref))
+  cacheDocuments[contextUrl(ref)] = context
+  cacheDocuments[schemaUrl(ref)] = credentialSchemaDocument(schema, schemaUrl(ref))
+}
+const schemaFor = (spec: ClaimSpec): ClaimSchema | undefined =>
+  published.find((t) => t.ref.name === (spec.ref?.name ?? spec.type) && t.ref.version === (spec.ref?.version ?? 1) && t.ref.issuer === spec.ref?.issuer)?.schema
+
+// What a verifier with vectors/cache would have: the bundled contexts and the custom ones.
+const loader = documentLoader({ cache: { get: async (url) => cacheDocuments[url], set: async () => {} } })
+
+async function claim(spec: ClaimSpec): Promise<{ signed: Json; unsigned: Json | undefined }> {
   const code = codeFor(spec.slug.toUpperCase(), spec.name)
   const list = listUrl(spec.slug, spec.list ?? 1)
   const unsigned = {
-    '@context': [CREDENTIALS_V2, CLAIMS_V1],
+    '@context': [CREDENTIALS_V2, spec.ref ? contextUrl(spec.ref) : CLAIMS_V1],
     id: `urn:vemphy:claim:${code}`,
     type: ['VerifiableCredential', spec.type],
     issuer: did(spec.slug),
     validFrom: spec.validFrom,
     ...(spec.validUntil && { validUntil: spec.validUntil }),
+    ...(spec.ref && { credentialSchema: { id: schemaUrl(spec.ref), type: 'JsonSchema' } }),
     credentialSubject: spec.subject,
     credentialStatus: {
       id: `${list}#${spec.index}`,
@@ -298,14 +468,19 @@ async function claim(spec: ClaimSpec): Promise<{ signed: Json; unsigned: Json }>
       statusListCredential: list,
     },
   }
-  const signed = structuredClone(await createProof(unsigned, await signerFor(spec.slug, spec.kid), { created: spec.created }))
+  const signer = await signerFor(spec.slug, spec.kid)
+  if (spec.unsignable) {
+    const stand = await createProof({ ...unsigned, '@context': [CREDENTIALS_V2, CLAIMS_V1], type: ['VerifiableCredential'], credentialSubject: {} }, signer, { created: spec.created })
+    return { signed: { ...unsigned, proof: (stand as Json).proof }, unsigned: undefined }
+  }
+  const signed = structuredClone(await createProof(unsigned, signer, { created: spec.created }, loader))
   spec.alter?.(signed)
   return { signed, unsigned }
 }
 
 // ---- write ----------------------------------------------------------------
 
-for (const dir of ['claims', 'keys', 'status', 'canon']) mkdirSync(root + dir, { recursive: true })
+for (const dir of ['claims', 'keys', 'status', 'canon', 'cache', 'schemas/valid', 'schemas/invalid', 'schemas/subjects']) mkdirSync(root + dir, { recursive: true })
 
 const seeds: Json = {
   warning: 'TEST KEYS. These seeds are public. Never use them outside tests.',
@@ -325,20 +500,28 @@ const expected: Json = {}
 for (const spec of claims) {
   const { signed, unsigned } = await claim(spec)
   write(`claims/${spec.name}.json`, signed)
-  write(`canon/${spec.name}.nq`, await canonicalize(unsigned))
-  expected[spec.name] = { ...spec.expect, note: spec.note }
+  if (unsigned) write(`canon/${spec.name}.nq`, await canonicalize(unsigned, loader))
+  // schemaValid is reported once the signature holds, whatever the answer turns out to be.
+  const signatureHolds = spec.expect.result !== 'unknown' || spec.expect.reason === 'status_list_unverifiable'
+  const schema = schemaFor(spec)
+  expected[spec.name] = {
+    ...spec.expect,
+    ...(signatureHolds && schema && { schemaValid: validateSubject(schema, spec.subject).length === 0 }),
+    note: spec.note,
+  }
 }
 write('expected.json', { now: NOW, vectors: expected })
 
-// What each claim type defines and discloses, for the Go side to compare against.
-write(
-  'schema.json',
-  Object.fromEntries(
-    CLAIM_TYPES.map((type) => [
-      type,
-      { fields: Object.keys(subjectSchemas[type].shape).sort(), defaultDisclosure: [...defaultDisclosure[type]] },
-    ]),
-  ),
-)
+// A verifier's cache, as `vemphy-vc verify --cache vectors/cache` reads it: every published context and
+// schema document, in canonical JSON. The Go generators must reproduce these bytes.
+for (const [url, document] of Object.entries(cacheDocuments)) write(`cache/${cacheFileName(url)}`, canonicalJson(document))
+
+for (const { file, ref, schema } of customTypes) write(`schemas/valid/${file}.json`, { ref, schema })
+for (const [name, entry] of Object.entries(invalidSchemas)) {
+  if (validateSchema(entry.schema).length === 0) throw new Error(`invalid schema ${name} was accepted`)
+  write(`schemas/invalid/${name}.json`, entry)
+}
+for (const [name, fixture] of Object.entries(subjectFixtures)) write(`schemas/subjects/${name}.json`, fixture)
+write('patterns.json', patterns)
 
 console.log(`wrote ${claims.length} claims, ${lists.length} status lists, ${Object.keys(issuers).length} DID documents`)

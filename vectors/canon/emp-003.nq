@@ -1,0 +1,16 @@
+<https://vemphy.com/i/emp/status/1#58312> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/ns/credentials/status#BitstringStatusListEntry> .
+<https://vemphy.com/i/emp/status/1#58312> <https://www.w3.org/ns/credentials/status#statusListCredential> <https://vemphy.com/i/emp/status/1> .
+<https://vemphy.com/i/emp/status/1#58312> <https://www.w3.org/ns/credentials/status#statusListIndex> "58312" .
+<https://vemphy.com/i/emp/status/1#58312> <https://www.w3.org/ns/credentials/status#statusPurpose> "revocation" .
+<https://vemphy.com/schemas/i/gcb/StaffIdCard/v1.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#JsonSchema> .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://vemphy.com/ns/i/gcb/StaffIdCard/v1#StaffIdCard> .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <https://www.w3.org/2018/credentials#credentialSchema> <https://vemphy.com/schemas/i/gcb/StaffIdCard/v1.json> .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <https://www.w3.org/2018/credentials#credentialStatus> <https://vemphy.com/i/emp/status/1#58312> .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <https://www.w3.org/2018/credentials#credentialSubject> _:c14n0 .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <https://www.w3.org/2018/credentials#issuer> <did:web:vemphy.com:i:emp> .
+<urn:vemphy:claim:EMP-QSGC-KP0F> <https://www.w3.org/2018/credentials#validFrom> "2026-05-20T14:30:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+_:c14n0 <https://vemphy.com/ns/i/gcb/StaffIdCard/v1#grade> "senior" .
+_:c14n0 <https://vemphy.com/ns/i/gcb/StaffIdCard/v1#holderName> "Ama Serwaa Mensah" .
+_:c14n0 <https://vemphy.com/ns/i/gcb/StaffIdCard/v1#issuedOn> "2026-01-12"^^<http://www.w3.org/2001/XMLSchema#date> .
+_:c14n0 <https://vemphy.com/ns/i/gcb/StaffIdCard/v1#staffNumber> "GCB-00417" .

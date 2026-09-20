@@ -1,0 +1,1 @@
+{"@context":{"@protected":true,"Attestation":"https://vemphy.com/ns/core/Attestation/v1#Attestation","reference":"https://vemphy.com/ns/core/Attestation/v1#reference","statement":"https://vemphy.com/ns/core/Attestation/v1#statement","subjectName":"https://vemphy.com/ns/core/Attestation/v1#subjectName","title":"https://vemphy.com/ns/core/Attestation/v1#title"}}

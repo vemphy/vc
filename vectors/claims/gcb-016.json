@@ -1,0 +1,39 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/i/gcb/StaffIdCard/v1"
+  ],
+  "id": "urn:vemphy:claim:GCB-TRF2-BN42",
+  "type": [
+    "VerifiableCredential",
+    "StaffIdCard"
+  ],
+  "issuer": "did:web:vemphy.com:i:gcb",
+  "validFrom": "2026-05-04T09:00:00Z",
+  "validUntil": "2026-08-04T09:00:00Z",
+  "credentialSchema": {
+    "id": "https://vemphy.com/schemas/i/gcb/StaffIdCard/v1.json",
+    "type": "JsonSchema"
+  },
+  "credentialSubject": {
+    "holderName": "Ama Serwaa Mensah",
+    "staffNumber": "GCB-00417",
+    "grade": "principal",
+    "issuedOn": "2026-01-12"
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/gcb/status/1#94580",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "94580",
+    "statusListCredential": "https://vemphy.com/i/gcb/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2026-05-04T09:00:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:gcb#key-2",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z2WoveEdjzhZuornnDWGMy6dFTGyFw2i4vhzxW2vNxT6cBvaz4CG2r7if9JDc6KKtogYU33UUKKPQetcYX5B8drbc"
+  }
+}

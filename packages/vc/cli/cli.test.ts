@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { cacheFileName } from './cache.js'
 import { type Io, run } from './run.js'
 
 const vectors = fileURLToPath(new URL('../../../vectors/', import.meta.url))
@@ -96,5 +97,45 @@ describe('vemphy-vc verify', () => {
     const main = fileURLToPath(new URL('./main.ts', import.meta.url))
     const stdout = execFileSync(process.execPath, ['--import', 'tsx', main, 'verify', claim('gcb-001')], { encoding: 'utf8' })
     expect(stdout).toBe('valid\n')
+  })
+
+  describe("an issuer's own type", () => {
+    const context = 'https://vemphy.com/ns/i/gcb/StaffIdCard/v1'
+
+    it('verifies offline with its context in the cache', async () => {
+      const t = offline()
+      expect(await run(['verify', claim('gcb-012'), '--offline', '--verbose'], t.io)).toBe(0)
+      expect(t.out).toEqual(['valid'])
+      expect(t.err).toContain('note the subject matches its schema')
+      expect(t.requests).toEqual([])
+    })
+
+    it('answers unknown, and says why, when the context is missing and the network is off', async () => {
+      const t = offline()
+      const empty = mkdtempSync(join(tmpdir(), 'vemphy-cache-'))
+      expect(await run(['verify', claim('gcb-012'), '--cache', empty, '--offline', '--verbose'], t.io)).toBe(1)
+      expect(t.out).toEqual(['unknown'])
+      expect(t.err.join('\n')).toMatch(/reason: context_unavailable\n.*not in .*vemphy-cache-.*--offline was given/)
+      expect(t.requests).toEqual([])
+    })
+
+    it('fetches the context from vemphy.com once and keeps it', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'vemphy-cache-'))
+      const t = offline()
+      t.io.fetch = async (input) => {
+        t.requests.push(String(input))
+        const file = join(vectors, 'cache', cacheFileName(String(input)))
+        return existsSync(file) ? new Response(readFileSync(file)) : new Response('', { status: 404 })
+      }
+      for (let i = 0; i < 2; i++) expect(await run(['verify', claim('gcb-012'), '--cache', dir], t.io)).toBe(0)
+      expect(t.requests.filter((url) => url === context)).toHaveLength(1)
+      expect(t.requests.every((url) => url.startsWith('https://vemphy.com/'))).toBe(true)
+    })
+
+    it('never asks another origin for a context', async () => {
+      const t = offline()
+      expect(await run(['verify', claim('gcb-009')], t.io)).toBe(1)
+      expect(t.requests).toEqual([])
+    })
   })
 })

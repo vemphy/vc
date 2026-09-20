@@ -1,0 +1,35 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://vemphy.com/ns/i/ug/Transcript/v1"
+  ],
+  "id": "urn:vemphy:claim:UG-4MNB-0GK1",
+  "type": [
+    "VerifiableCredential",
+    "Transcript"
+  ],
+  "issuer": "did:web:vemphy.com:i:ug",
+  "validFrom": "2024-11-16T00:00:00Z",
+  "credentialSchema": {
+    "id": "https://vemphy.com/schemas/i/ug/Transcript/v1.json",
+    "type": "JsonSchema"
+  },
+  "credentialSubject": {
+    "graduateName": "Kwame Boateng"
+  },
+  "credentialStatus": {
+    "id": "https://vemphy.com/i/ug/status/1#1002",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "1002",
+    "statusListCredential": "https://vemphy.com/i/ug/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2024-11-18T10:00:00Z",
+    "verificationMethod": "did:web:vemphy.com:i:ug#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "zQQveoRnCL672i1vFvntsjq1vgJmgs8Vx8TYHdgZoNwZ8KHptHcQH5PMozAGkH1ZZYN6NdS896vmVscYcDQ9ydbh"
+  }
+}

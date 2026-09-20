@@ -3,14 +3,17 @@
   "vectors": {
     "gcb-001": {
       "result": "valid",
+      "schemaValid": true,
       "note": "A bank reference letter in good order."
     },
     "ug-001": {
       "result": "valid",
+      "schemaValid": true,
       "note": "A degree certificate. It has no validUntil."
     },
     "emp-001": {
       "result": "valid",
+      "schemaValid": true,
       "note": "An employment letter in good order."
     },
     "gcb-002": {
@@ -25,10 +28,12 @@
     },
     "gcb-004": {
       "result": "revoked",
+      "schemaValid": true,
       "note": "Its bit is set in the status list."
     },
     "gcb-005": {
       "result": "expired",
+      "schemaValid": true,
       "note": "validUntil has passed."
     },
     "gcb-006": {
@@ -38,11 +43,13 @@
     },
     "gcb-007": {
       "result": "valid",
+      "schemaValid": true,
       "note": "Signed with key-1, which has since been retired in favour of key-2. Rotation does not disturb it."
     },
     "gcb-008": {
       "result": "unknown",
       "reason": "status_list_unverifiable",
+      "schemaValid": true,
       "note": "Its status list is past its own validUntil, so revocation cannot be ruled out."
     },
     "gcb-009": {
@@ -52,11 +59,58 @@
     },
     "gcb-010": {
       "result": "revoked",
+      "schemaValid": true,
       "note": "Both revoked and past validUntil. Revocation is reported."
     },
     "gcb-011": {
       "result": "valid",
+      "schemaValid": true,
       "note": "Signed with key-3 a month before key-3 was revoked."
+    },
+    "gcb-012": {
+      "result": "valid",
+      "schemaValid": true,
+      "note": "A claim of one of the issuer's own types, version 1. Version 2 of the type exists; this claim is untouched by it."
+    },
+    "gcb-013": {
+      "result": "valid",
+      "schemaValid": true,
+      "note": "The same type at version 2, with the field version 2 added."
+    },
+    "gcb-014": {
+      "result": "valid",
+      "schemaValid": true,
+      "note": "An Attestation: the core type for a one-off statement."
+    },
+    "gcb-015": {
+      "result": "valid",
+      "schemaValid": true,
+      "note": "A core type with an amount, which is a decimal string and never a number."
+    },
+    "gcb-016": {
+      "result": "valid",
+      "schemaValid": false,
+      "note": "Correctly signed, but grade is not a value its schema allows. The answer is still valid; schemaValid reports the mismatch."
+    },
+    "gcb-017": {
+      "result": "valid",
+      "schemaValid": true,
+      "note": "Every kind of field at once, so both languages canonicalise integers, booleans, dates and instants alike."
+    },
+    "emp-002": {
+      "result": "valid",
+      "schemaValid": true,
+      "note": "A salary confirmation, a core type."
+    },
+    "emp-003": {
+      "result": "unknown",
+      "reason": "malformed",
+      "note": "Signed by one issuer against another issuer's type. An issuer may use core types and its own, nothing else."
+    },
+    "ug-002": {
+      "result": "unknown",
+      "reason": "context_unavailable",
+      "note": "Its context is not bundled and is not in vectors/cache. Offline, nothing can be said about the signature."
     }
   }
 }

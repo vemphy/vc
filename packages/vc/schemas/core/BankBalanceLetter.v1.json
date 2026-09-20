@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "BankBalanceLetter",
+    "displayName": {
+      "en": "Bank balance letter"
+    }
+  },
+  "properties": {
+    "accountHolderName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Account holder"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "accountType": {
+      "type": "string",
+      "enum": [
+        "current",
+        "savings",
+        "business"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Account type"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "current": {
+            "en": "Current"
+          },
+          "savings": {
+            "en": "Savings"
+          },
+          "business": {
+            "en": "Business"
+          }
+        },
+        "order": 2
+      }
+    },
+    "accountNumberLast4": {
+      "type": "string",
+      "maxLength": 4,
+      "pattern": "^\\d{4}$",
+      "x-vemphy": {
+        "label": {
+          "en": "Account number, last 4 digits"
+        },
+        "disclosable": false,
+        "pii": true,
+        "order": 3
+      }
+    },
+    "balanceAmount": {
+      "type": "string",
+      "maxLength": 18,
+      "pattern": "^(0|[1-9]\\d{0,14})(\\.\\d{2})?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Balance"
+        },
+        "disclosable": true,
+        "pii": false,
+        "kind": "decimal",
+        "order": 4
+      }
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "GHS",
+        "USD",
+        "EUR",
+        "GBP"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Currency"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "GHS": {
+            "en": "Ghana cedi (GHS)"
+          },
+          "USD": {
+            "en": "US dollar (USD)"
+          },
+          "EUR": {
+            "en": "Euro (EUR)"
+          },
+          "GBP": {
+            "en": "Pound sterling (GBP)"
+          }
+        },
+        "order": 5
+      }
+    },
+    "balanceAsAt": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Balance as at"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 6
+      }
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Branch"
+        },
+        "disclosable": false,
+        "pii": false,
+        "order": 7
+      }
+    },
+    "addressedTo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Addressed to"
+        },
+        "disclosable": false,
+        "pii": false,
+        "order": 8
+      }
+    }
+  },
+  "required": [
+    "accountHolderName",
+    "accountType",
+    "accountNumberLast4",
+    "balanceAmount",
+    "currency",
+    "balanceAsAt"
+  ]
+}

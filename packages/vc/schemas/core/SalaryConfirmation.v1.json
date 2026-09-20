@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "SalaryConfirmation",
+    "displayName": {
+      "en": "Salary confirmation"
+    }
+  },
+  "properties": {
+    "employeeName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Employee"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "staffNumber": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Staff number"
+        },
+        "disclosable": false,
+        "pii": true,
+        "order": 2
+      }
+    },
+    "jobTitle": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Job title"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 3
+      }
+    },
+    "grossMonthlySalary": {
+      "type": "string",
+      "maxLength": 18,
+      "pattern": "^(0|[1-9]\\d{0,14})(\\.\\d{2})?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Gross monthly salary"
+        },
+        "disclosable": true,
+        "pii": true,
+        "kind": "decimal",
+        "order": 4
+      }
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "GHS",
+        "USD",
+        "EUR",
+        "GBP"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Currency"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "GHS": {
+            "en": "Ghana cedi (GHS)"
+          },
+          "USD": {
+            "en": "US dollar (USD)"
+          },
+          "EUR": {
+            "en": "Euro (EUR)"
+          },
+          "GBP": {
+            "en": "Pound sterling (GBP)"
+          }
+        },
+        "order": 5
+      }
+    },
+    "payFrequency": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "fortnightly",
+        "weekly"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Paid"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "monthly": {
+            "en": "Monthly"
+          },
+          "fortnightly": {
+            "en": "Every two weeks"
+          },
+          "weekly": {
+            "en": "Weekly"
+          }
+        },
+        "order": 6
+      }
+    },
+    "asAt": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "As at"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 7
+      }
+    }
+  },
+  "required": [
+    "employeeName",
+    "jobTitle",
+    "grossMonthlySalary",
+    "currency",
+    "payFrequency",
+    "asAt"
+  ]
+}

@@ -1,0 +1,455 @@
+{
+  "schema": "vectors/schemas/valid/gcb.AllKinds.v1.json",
+  "base": {
+    "text": "Plain",
+    "count": 0,
+    "flag": false,
+    "day": "2026-05-04",
+    "instant": "2026-05-04T09:00:00Z"
+  },
+  "accept": [
+    {
+      "note": "the base subject"
+    },
+    {
+      "note": "five characters outside the BMP count as five",
+      "set": {
+        "short": "😀😀😀😀😀"
+      }
+    },
+    {
+      "note": "an empty string where no minLength is set",
+      "set": {
+        "short": ""
+      }
+    },
+    {
+      "note": "text with inner spaces",
+      "set": {
+        "text": "Two  words"
+      }
+    },
+    {
+      "note": "new lines in long text",
+      "set": {
+        "long": "one\ntwo"
+      }
+    },
+    {
+      "note": "a whole amount",
+      "set": {
+        "amount": "12500"
+      }
+    },
+    {
+      "note": "an amount with pesewas",
+      "set": {
+        "amount": "12500.50"
+      }
+    },
+    {
+      "note": "zero",
+      "set": {
+        "amount": "0.00"
+      }
+    },
+    {
+      "note": "the largest integer",
+      "set": {
+        "count": 9007199254740991
+      }
+    },
+    {
+      "note": "the smallest integer",
+      "set": {
+        "count": -9007199254740991
+      }
+    },
+    {
+      "note": "both ends of a range",
+      "set": {
+        "percent": 100
+      }
+    },
+    {
+      "note": "29 February in a leap year",
+      "set": {
+        "day": "2024-02-29"
+      }
+    },
+    {
+      "note": "29 February 2000",
+      "set": {
+        "day": "2000-02-29"
+      }
+    },
+    {
+      "note": "an offset",
+      "set": {
+        "instant": "2026-05-04T09:00:00+01:00"
+      }
+    },
+    {
+      "note": "a negative offset and a fraction",
+      "set": {
+        "instant": "2026-05-04T09:00:00.123456789-05:30"
+      }
+    },
+    {
+      "note": "the last second of a day",
+      "set": {
+        "instant": "2026-12-31T23:59:59Z"
+      }
+    },
+    {
+      "note": "an address",
+      "set": {
+        "email": "ama.mensah+letters@gcb.com.gh"
+      }
+    },
+    {
+      "note": "a link",
+      "set": {
+        "link": "https://vemphy.com/v/GCB-7K2M-9QXP?x=1#top"
+      }
+    },
+    {
+      "note": "a plain http link",
+      "set": {
+        "link": "http://example.com"
+      }
+    },
+    {
+      "note": "an enum value",
+      "set": {
+        "choice": "b"
+      }
+    }
+  ],
+  "reject": [
+    {
+      "note": "a property the schema does not have",
+      "set": {
+        "other": "x"
+      }
+    },
+    {
+      "note": "a required property missing",
+      "unset": [
+        "flag"
+      ]
+    },
+    {
+      "note": "null",
+      "set": {
+        "text": null
+      }
+    },
+    {
+      "note": "six characters outside the BMP",
+      "set": {
+        "short": "😀😀😀😀😀😀"
+      }
+    },
+    {
+      "note": "a leading space",
+      "set": {
+        "text": " Plain"
+      }
+    },
+    {
+      "note": "a trailing space",
+      "set": {
+        "text": "Plain "
+      }
+    },
+    {
+      "note": "a new line in single-line text",
+      "set": {
+        "text": "one\ntwo"
+      }
+    },
+    {
+      "note": "empty text",
+      "set": {
+        "text": ""
+      }
+    },
+    {
+      "note": "an amount as a number",
+      "set": {
+        "amount": 12500.5
+      }
+    },
+    {
+      "note": "one decimal place",
+      "set": {
+        "amount": "12500.5"
+      }
+    },
+    {
+      "note": "a leading zero",
+      "set": {
+        "amount": "012.00"
+      }
+    },
+    {
+      "note": "a thousands separator",
+      "set": {
+        "amount": "12,500.00"
+      }
+    },
+    {
+      "note": "a negative amount",
+      "set": {
+        "amount": "-1.00"
+      }
+    },
+    {
+      "note": "a fraction where an integer is expected",
+      "set": {
+        "count": 1.5
+      }
+    },
+    {
+      "note": "an integer as a string",
+      "set": {
+        "count": "1"
+      }
+    },
+    {
+      "note": "past the end of a range",
+      "set": {
+        "percent": 101
+      }
+    },
+    {
+      "note": "below the start of a range",
+      "set": {
+        "percent": -1
+      }
+    },
+    {
+      "note": "a boolean as a string",
+      "set": {
+        "flag": "true"
+      }
+    },
+    {
+      "note": "a boolean as a number",
+      "set": {
+        "flag": 1
+      }
+    },
+    {
+      "note": "29 February in a common year",
+      "set": {
+        "day": "2023-02-29"
+      }
+    },
+    {
+      "note": "29 February 1900",
+      "set": {
+        "day": "1900-02-29"
+      }
+    },
+    {
+      "note": "month 13",
+      "set": {
+        "day": "2026-13-01"
+      }
+    },
+    {
+      "note": "day 0",
+      "set": {
+        "day": "2026-01-00"
+      }
+    },
+    {
+      "note": "31 April",
+      "set": {
+        "day": "2026-04-31"
+      }
+    },
+    {
+      "note": "a date without zero padding",
+      "set": {
+        "day": "2026-5-4"
+      }
+    },
+    {
+      "note": "year 0000",
+      "set": {
+        "day": "0000-01-01"
+      }
+    },
+    {
+      "note": "a date with a time",
+      "set": {
+        "day": "2026-05-04T09:00:00Z"
+      }
+    },
+    {
+      "note": "a date with a trailing new line",
+      "set": {
+        "day": "2026-05-04\n"
+      }
+    },
+    {
+      "note": "an instant without an offset",
+      "set": {
+        "instant": "2026-05-04T09:00:00"
+      }
+    },
+    {
+      "note": "a lowercase t",
+      "set": {
+        "instant": "2026-05-04t09:00:00Z"
+      }
+    },
+    {
+      "note": "a lowercase z",
+      "set": {
+        "instant": "2026-05-04T09:00:00z"
+      }
+    },
+    {
+      "note": "a space for the T",
+      "set": {
+        "instant": "2026-05-04 09:00:00Z"
+      }
+    },
+    {
+      "note": "hour 24",
+      "set": {
+        "instant": "2026-05-04T24:00:00Z"
+      }
+    },
+    {
+      "note": "a leap second",
+      "set": {
+        "instant": "2026-06-30T23:59:60Z"
+      }
+    },
+    {
+      "note": "ten fraction digits",
+      "set": {
+        "instant": "2026-05-04T09:00:00.1234567890Z"
+      }
+    },
+    {
+      "note": "an offset of 24 hours",
+      "set": {
+        "instant": "2026-05-04T09:00:00+24:00"
+      }
+    },
+    {
+      "note": "an offset without a colon",
+      "set": {
+        "instant": "2026-05-04T09:00:00+0100"
+      }
+    },
+    {
+      "note": "no seconds",
+      "set": {
+        "instant": "2026-05-04T09:00Z"
+      }
+    },
+    {
+      "note": "an impossible date in an instant",
+      "set": {
+        "instant": "2026-02-30T09:00:00Z"
+      }
+    },
+    {
+      "note": "an address with no domain dot",
+      "set": {
+        "email": "ama@localhost"
+      }
+    },
+    {
+      "note": "an address with two dots together",
+      "set": {
+        "email": "ama..mensah@gcb.com.gh"
+      }
+    },
+    {
+      "note": "an address starting with a dot",
+      "set": {
+        "email": ".ama@gcb.com.gh"
+      }
+    },
+    {
+      "note": "an address with a space",
+      "set": {
+        "email": "ama mensah@gcb.com.gh"
+      }
+    },
+    {
+      "note": "an address with no local part",
+      "set": {
+        "email": "@gcb.com.gh"
+      }
+    },
+    {
+      "note": "a domain label ending in a hyphen",
+      "set": {
+        "email": "ama@gcb-.com"
+      }
+    },
+    {
+      "note": "an address outside ASCII",
+      "set": {
+        "email": "amá@gcb.com.gh"
+      }
+    },
+    {
+      "note": "a local part of 65 characters",
+      "set": {
+        "email": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@gcb.com.gh"
+      }
+    },
+    {
+      "note": "an ftp link",
+      "set": {
+        "link": "ftp://example.com/file"
+      }
+    },
+    {
+      "note": "a link with a space",
+      "set": {
+        "link": "https://example.com/a b"
+      }
+    },
+    {
+      "note": "a link with no host",
+      "set": {
+        "link": "https://"
+      }
+    },
+    {
+      "note": "a relative link",
+      "set": {
+        "link": "/v/GCB-7K2M-9QXP"
+      }
+    },
+    {
+      "note": "a link outside ASCII",
+      "set": {
+        "link": "https://example.com/é"
+      }
+    },
+    {
+      "note": "a value outside the enum",
+      "set": {
+        "choice": "c"
+      }
+    },
+    {
+      "note": "an enum value in another case",
+      "set": {
+        "choice": "A"
+      }
+    }
+  ]
+}
