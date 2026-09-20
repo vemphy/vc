@@ -20,7 +20,7 @@ export async function decodeList(encodedList: string): Promise<Uint8Array> {
 
 export async function encodeList(bits: Uint8Array): Promise<string> {
   if (bits.length !== LIST_BYTES) throw new Error(`status list must be ${LIST_BYTES} bytes`)
-  const compressed = await collect(blobStream(bits).pipeThrough(new CompressionStream('gzip')), Infinity)
+  const compressed = await collect(through(bits, new CompressionStream('gzip')), Infinity)
   // The gzip header records a timestamp and the operating system. Both are
   // cleared so that the same list always encodes to the same text.
   compressed.fill(0, 4, 9)
@@ -44,12 +44,15 @@ function byteOf(bits: Uint8Array, index: number): number {
   return index >> 3
 }
 
-function blobStream(bytes: Uint8Array): ReadableStream<Uint8Array> {
-  return new Blob([bytes as Uint8Array<ArrayBuffer>]).stream()
+// The DOM and Node typings disagree about the chunk type of these streams
+// (ArrayBuffer against ArrayBufferLike), so the pairing is stated once here.
+function through(bytes: Uint8Array, transform: CompressionStream | DecompressionStream): ReadableStream<Uint8Array> {
+  const source = new Blob([bytes as Uint8Array<ArrayBuffer>]).stream() as ReadableStream<Uint8Array>
+  return source.pipeThrough(transform as unknown as ReadableWritablePair<Uint8Array, Uint8Array>)
 }
 
 function gunzip(bytes: Uint8Array, limit: number): Promise<Uint8Array> {
-  return collect(blobStream(bytes).pipeThrough(new DecompressionStream('gzip')), limit)
+  return collect(through(bytes, new DecompressionStream('gzip')), limit)
 }
 
 async function collect(stream: ReadableStream<Uint8Array>, limit: number): Promise<Uint8Array> {
