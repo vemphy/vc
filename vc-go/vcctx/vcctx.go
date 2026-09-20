@@ -29,6 +29,18 @@ var claimsV1 []byte
 // ErrUnknownContext is returned for any URL that is not a bundled context.
 var ErrUnknownContext = errors.New("unknown context")
 
+// Document returns the bundled context served at url, byte for byte, and
+// whether there is one. A service that hosts a context should serve these bytes.
+func Document(url string) ([]byte, bool) {
+	switch url {
+	case CredentialsV2:
+		return append([]byte(nil), credentialsV2...), true
+	case ClaimsV1:
+		return append([]byte(nil), claimsV1...), true
+	}
+	return nil, false
+}
+
 type loader struct{ documents map[string][]byte }
 
 // Loader returns a document loader that serves the bundled contexts and

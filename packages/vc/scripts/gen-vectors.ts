@@ -16,6 +16,7 @@ import { canonicalize } from '../src/canon.js'
 import { ALPHABET, formatCode, isIssuable } from '../src/code.js'
 import { CLAIMS_V1, CREDENTIALS_V2 } from '../src/context/urls.js'
 import { encodeMultikey } from '../src/multibase.js'
+import { CLAIM_TYPES, defaultDisclosure, subjectSchemas } from '../src/schema/index.js'
 import { createProof, memorySigner } from '../src/proof.js'
 import { encodeList, LIST_BITS, setBit } from '../src/status.js'
 
@@ -328,5 +329,16 @@ for (const spec of claims) {
   expected[spec.name] = { ...spec.expect, note: spec.note }
 }
 write('expected.json', { now: NOW, vectors: expected })
+
+// What each claim type defines and discloses, for the Go side to compare against.
+write(
+  'schema.json',
+  Object.fromEntries(
+    CLAIM_TYPES.map((type) => [
+      type,
+      { fields: Object.keys(subjectSchemas[type].shape).sort(), defaultDisclosure: [...defaultDisclosure[type]] },
+    ]),
+  ),
+)
 
 console.log(`wrote ${claims.length} claims, ${lists.length} status lists, ${Object.keys(issuers).length} DID documents`)

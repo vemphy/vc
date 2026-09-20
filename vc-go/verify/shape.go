@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf16"
 
+	"github.com/vemphy/vc/vc-go/schema"
 	"github.com/vemphy/vc/vc-go/status"
 	"github.com/vemphy/vc/vc-go/vcctx"
 )
@@ -29,9 +29,7 @@ var (
 	listURLPattern    = regexp.MustCompile(`^https://vemphy\.com/i/` + slug + `/status/[1-9]\d*$`)
 	indexPattern      = regexp.MustCompile(`^(0|[1-9]\d*)$`)
 	encodedPattern    = regexp.MustCompile(`^u[A-Za-z0-9_-]+$`)
-	datePattern       = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 	instantPattern    = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$`)
-	last4Pattern      = regexp.MustCompile(`^\d{4}$`)
 )
 
 type proofShape struct {
@@ -202,8 +200,7 @@ func parseCredential(raw []byte) (*credential, error) {
 	if len(c.Type) != 2 || c.Type[0] != "VerifiableCredential" {
 		return nil, errors.New("type must be VerifiableCredential and one claim type")
 	}
-	fields, known := claimTypes[c.Type[1]]
-	if !known {
+	if !schema.IsClaimType(c.Type[1]) {
 		return nil, fmt.Errorf("unknown claim type %q", c.Type[1])
 	}
 	if !issuerPattern.MatchString(c.Issuer) || !claimIDPattern.MatchString(c.ID) {
@@ -249,7 +246,7 @@ func parseCredential(raw []byte) (*credential, error) {
 	if c.created, err = c.Proof.check(c.Issuer); err != nil {
 		return nil, err
 	}
-	if err := checkSubject(c.Type[1], fields, c.CredentialSubject); err != nil {
+	if err := schema.ValidateSubject(c.Type[1], c.CredentialSubject); err != nil {
 		return nil, fmt.Errorf("credentialSubject: %w", err)
 	}
 	return &c, nil
@@ -288,141 +285,4 @@ func parseStatusList(raw []byte) (*statusListCredential, error) {
 		return nil, err
 	}
 	return &l, nil
-}
-
-// ---- claim subjects ---------------------------------------------------------
-
-type kind int
-
-const (
-	text kind = iota
-	date
-	last4
-	boolean
-	enum
-)
-
-type field struct {
-	kind     kind
-	optional bool
-	values   []string
-}
-
-var claimTypes = map[string]map[string]field{
-	"BankReferenceLetter": {
-		"accountHolderName":  {kind: text},
-		"accountType":        {kind: enum, values: []string{"current", "savings", "business"}},
-		"accountNumberLast4": {kind: last4},
-		"accountOpenedOn":    {kind: date},
-		"branch":             {kind: text},
-		"standing":           {kind: enum, values: []string{"satisfactory", "unsatisfactory"}},
-		"addressedTo":        {kind: text, optional: true},
-		"referenceDate":      {kind: date},
-	},
-	"DegreeCertificate": {
-		"graduateName":   {kind: text},
-		"studentNumber":  {kind: text},
-		"qualification":  {kind: text},
-		"programme":      {kind: text},
-		"classification": {kind: text, optional: true},
-		"conferredOn":    {kind: date},
-	},
-	"EmploymentLetter": {
-		"employeeName":      {kind: text},
-		"staffNumber":       {kind: text, optional: true},
-		"jobTitle":          {kind: text},
-		"employmentType":    {kind: enum, values: []string{"permanent", "contract", "temporary", "internship"}},
-		"startDate":         {kind: date},
-		"endDate":           {kind: date, optional: true},
-		"currentlyEmployed": {kind: boolean},
-	},
-}
-
-func checkSubject(claimType string, fields map[string]field, raw json.RawMessage) error {
-	var subject map[string]any
-	if err := json.Unmarshal(raw, &subject); err != nil || subject == nil {
-		return errors.New("must be an object")
-	}
-	for name := range subject {
-		if _, ok := fields[name]; !ok {
-			return fmt.Errorf("unknown field %q", name)
-		}
-	}
-	for name, f := range fields {
-		value, present := subject[name]
-		if !present {
-			if f.optional {
-				continue
-			}
-			return fmt.Errorf("%s is required", name)
-		}
-		if err := f.check(value); err != nil {
-			return fmt.Errorf("%s: %w", name, err)
-		}
-	}
-	if claimType == "EmploymentLetter" {
-		if end, ok := subject["endDate"].(string); ok {
-			if subject["currentlyEmployed"] == true {
-				return errors.New("a current employee has no end date")
-			}
-			// ISO dates compare correctly as strings.
-			if end < subject["startDate"].(string) {
-				return errors.New("endDate must not be before startDate")
-			}
-		}
-	}
-	return nil
-}
-
-func (f field) check(value any) error {
-	if f.kind == boolean {
-		if _, ok := value.(bool); !ok {
-			return errors.New("must be true or false")
-		}
-		return nil
-	}
-	s, ok := value.(string)
-	if !ok {
-		return errors.New("must be text")
-	}
-	switch f.kind {
-	case text:
-		// Length is counted the way JavaScript counts it, in UTF-16 units.
-		if n := len(utf16.Encode([]rune(s))); n < 1 || n > 200 {
-			return errors.New("must be 1-200 characters")
-		}
-		runes := []rune(s)
-		if isJSSpace(runes[0]) || isJSSpace(runes[len(runes)-1]) {
-			return errors.New("must not start or end with a space")
-		}
-	case date:
-		if !datePattern.MatchString(s) {
-			return errors.New("must be YYYY-MM-DD")
-		}
-		if _, err := time.Parse("2006-01-02", s); err != nil {
-			return errors.New("is not a calendar date")
-		}
-	case last4:
-		if !last4Pattern.MatchString(s) {
-			return errors.New("must be four digits")
-		}
-	case enum:
-		for _, v := range f.values {
-			if s == v {
-				return nil
-			}
-		}
-		return fmt.Errorf("must be one of %s", strings.Join(f.values, ", "))
-	}
-	return nil
-}
-
-// The characters String.prototype.trim removes.
-func isJSSpace(r rune) bool {
-	switch {
-	case r >= '\t' && r <= '\r', r == ' ', r == 0xA0, r == 0x1680, r >= 0x2000 && r <= 0x200A,
-		r == 0x2028, r == 0x2029, r == 0x202F, r == 0x205F, r == 0x3000, r == 0xFEFF:
-		return true
-	}
-	return false
 }
