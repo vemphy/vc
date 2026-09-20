@@ -1,5 +1,10 @@
 # `vemphy/vc` — toolkit design
 
+> **Superseded in part by 0.2.0 (2026-09-20).** Claim types are no longer
+> compiled in as Zod schemas, and claims no longer share one context. See
+> [`2026-09-20-claim-types-as-data-design.md`](2026-09-20-claim-types-as-data-design.md).
+> Codes, proofs, DIDs, status lists and the order of verification stand as written here.
+
 Date: 2026-09-19
 Status: awaiting review
 

@@ -158,6 +158,33 @@ The outcome also says whether the subject matches the schema the claim names
 (`schemaValid`). That is information for whoever wants it. It never changes the
 answer: signature, revocation and dates decide that.
 
+### Working with claim schemas
+
+```ts
+import { assertNoDroppedTerms, contextFromSchema, contextUrl, coreSchema, labelFor, namespaceOf, validateSchema, validateSubject } from '@vemphy/vc/schema'
+
+validateSchema(draft)                          // [] when the draft may be published, else [{ field, message }]
+validateSubject(coreSchema('Attestation', 1)!, subject)
+labelFor(schema, 'holderName', ['fr-CA', 'en']) // the best language the schema has, else English
+
+const ref = { issuer: 'gcb', name: 'StaffIdCard', version: 1 }
+const context = contextFromSchema(schema, namespaceOf(ref))  // served at contextUrl(ref)
+await assertNoDroppedTerms(schema, context, namespaceOf(ref))
+```
+
+```go
+s, err := schema.Parse(raw)                     // refuses anything outside the rules, then compiles
+problems := s.ValidateSubject(subjectJSON)      // nil, or one problem per failing field
+label, _ := s.Label("holderName", "fr-CA", "en")
+
+ref := schema.Ref{Issuer: "gcb", Name: "StaffIdCard", Version: 1}
+context := schema.GenerateContext(s, ref.Namespace()) // the same bytes the TypeScript side produces
+err = canon.AssertNoDroppedTerms(s, context, ref.Namespace())
+document, _ := schema.Document(s, ref.SchemaURL())    // what is served at the schema URL
+
+for _, core := range schema.Core() { /* core.Ref, core.Schema */ }
+```
+
 ### What a claim schema may contain
 
 One flat object of at most 30 fields. A field is text (`maxLength` required,
@@ -217,7 +244,7 @@ packages/vc/src/      code · schema · context · canon · proof · did · stat
 packages/vc/cli/      the vemphy-vc command
 vc-go/                code · schema · vcctx · canon · proof · did · multibase · status · verify
 vectors/              claims · keys · status · canon · schemas · cache · w3c · codes.json · patterns.json · expected.json
-docs/              design and implementation plan
+docs/                 designs and implementation plans
 ```
 
 ## Licence
