@@ -1,0 +1,94 @@
+name: interop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: interop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: The published entry point verifies a vector offline
+        run: test "$(node packages/vc/dist/cli/main.js verify vectors/claims/gcb-001.json)" = valid
+
+  go:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.23', stable]
+    defaults:
+      run:
+        working-directory: vc-go
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}
+          cache-dependency-path: vc-go/go.sum
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test ./...
+
+  # TypeScript signs and Go verifies, Go signs and TypeScript verifies, with a
+  # key generated during the run. Canonical N-Quads are compared byte for byte.
+  cross:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache-dependency-path: vc-go/go.sum
+      - run: pnpm install --frozen-lockfile
+      - run: scripts/interop.sh
+
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache-dependency-path: vc-go/go.sum
+      - run: pnpm install --frozen-lockfile
+      - name: Vectors reproduce exactly
+        run: |
+          pnpm gen:vectors
+          pnpm --filter @vemphy/vc gen:codes
+          pnpm --filter @vemphy/vc exec tsx scripts/gen-status-fixture.ts
+          (cd vc-go && UPDATE_VECTORS=1 go test ./status)
+          git diff --exit-code -- vectors
+      - run: scripts/check-contexts.sh
+      - run: scripts/check-wording.sh
+      - run: pnpm audit --prod
+      - name: govulncheck
+        working-directory: vc-go
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...

@@ -1,6 +1,6 @@
 # `vemphy/vc` Toolkit Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** A TypeScript package and a Go module that verify Vemphy claims identically, proven by shared vectors and an interop CI workflow.
 
@@ -59,14 +59,14 @@ vectors/
 
 **Produces:** `pnpm test`, `pnpm build`, `pnpm typecheck`, `(cd vc-go && go test ./...)`, `scripts/check-wording.sh` all runnable.
 
-- [ ] Root `package.json`: private, `"packageManager": "pnpm@12.4.1"`, scripts `test`, `build`, `typecheck`, `gen:vectors`, `check:wording`, each delegating with `pnpm -r` / `pnpm --filter @vemphy/vc`.
-- [ ] `packages/vc/package.json`: `"type": "module"`, `"engines": {"node": ">=20"}`, `"bin": {"vemphy-vc": "./dist/cli/main.js"}`, `exports` for `.`, `./code`, `./schema` (each `types` + `import`), `files: ["dist"]`, `"sideEffects": false`.
-- [ ] `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, `module`/`moduleResolution` `NodeNext`, `target` `ES2022`, `resolveJsonModule`.
-- [ ] `tsup.config.ts`: entries `src/index.ts`, `src/code.ts`, `src/schema/index.ts`, `cli/main.ts`; `format: ['esm']`, `dts: true`, `clean: true`.
-- [ ] `vc-go/go.mod`: `module github.com/vemphy/vc/vc-go`, `go 1.23`.
-- [ ] `scripts/check-wording.sh`: `grep -rniE 'fake|forged|fraud'` over tracked files excluding itself, this plan, the design doc and lockfiles; exit 1 on a hit. The script builds its pattern from pieces (`f''ake`) so it does not match itself.
-- [ ] `LICENSE`: Apache-2.0 full text.
-- [ ] Verify: `pnpm install && pnpm typecheck && scripts/check-wording.sh` succeed. Commit `Scaffold workspace`.
+- [x] Root `package.json`: private, `"packageManager": "pnpm@12.4.1"`, scripts `test`, `build`, `typecheck`, `gen:vectors`, `check:wording`, each delegating with `pnpm -r` / `pnpm --filter @vemphy/vc`.
+- [x] `packages/vc/package.json`: `"type": "module"`, `"engines": {"node": ">=20"}`, `"bin": {"vemphy-vc": "./dist/cli/main.js"}`, `exports` for `.`, `./code`, `./schema` (each `types` + `import`), `files: ["dist"]`, `"sideEffects": false`.
+- [x] `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, `module`/`moduleResolution` `NodeNext`, `target` `ES2022`, `resolveJsonModule`.
+- [x] `tsup.config.ts`: entries `src/index.ts`, `src/code.ts`, `src/schema/index.ts`, `cli/main.ts`; `format: ['esm']`, `dts: true`, `clean: true`.
+- [x] `vc-go/go.mod`: `module github.com/vemphy/vc/vc-go`, `go 1.23`.
+- [x] `scripts/check-wording.sh`: `grep -rniE 'fake|forged|fraud'` over tracked files excluding itself, this plan, the design doc and lockfiles; exit 1 on a hit. The script builds its pattern from pieces (`f''ake`) so it does not match itself.
+- [x] `LICENSE`: Apache-2.0 full text.
+- [x] Verify: `pnpm install && pnpm typecheck && scripts/check-wording.sh` succeed. Commit `Scaffold workspace`.
 
 ---
 
@@ -92,7 +92,7 @@ export function isIssuable(code: string): boolean                  // false when
 
 Arithmetic: `2^35 mod 37 = 19`, so `check = (19 · (s mod 37) + (n mod 37)) mod 37`, each reduced by Horner's rule — no BigInt needed except in `checkChar`.
 
-- [ ] **Failing tests first** (`code.test.ts`), exact expectations:
+- [x] **Failing tests first** (`code.test.ts`), exact expectations:
   - `checkChar(0n) === '0'`, `checkChar(32n) === '*'`, `checkChar(36n) === 'U'`, `checkChar(37n) === '0'`, `checkChar(1234n) === 'D'`.
   - `checkCharFor('GCB', '0000000') === '1'`; `checkCharFor('UG', '0000000') === '4'`; `checkCharFor('GCB', '7K2M9QX') === 'D'`.
   - `parseCode('GCB-7K2M-9QXD')` → ok, `code: 'GCB-7K2M-9QXD'`.
@@ -102,11 +102,11 @@ Arithmetic: `2^35 mod 37 = 19`, so `check = (19 · (s mod 37) + (n mod 37)) mod 
   - `'GCD-7K2M-9QXD'` → `check` (slug typo caught).
   - `'GCB-7K2M-9QX'`, `'TOOLONG-0000-0001'`, `'G-0000-0001'`, `''` → `format`.
   - `isIssuable('GCB-0000-0001') === true`; a code with check `*` → `false` but `parseCode` ok.
-- [ ] Run `pnpm --filter @vemphy/vc test code` → fails (module missing).
-- [ ] Implement everything except the ranking inside `suspects` — return candidate positions in ascending order for now. **The ranking heuristic is reserved for the repository owner** (see "Owner contribution" below).
-- [ ] Tests pass.
-- [ ] Write `vectors/codes.json`: `[{ "input", "ok", "code"?, "error"?, "issuable"? }]` with every case above plus ten more valid codes across slugs `GCB`, `UG`, `KNUST`-style 4-letter `KNUS`, `AB`.
-- [ ] Add a test that replays `codes.json`. Commit `Add code parsing and check character (TS)`.
+- [x] Run `pnpm --filter @vemphy/vc test code` → fails (module missing).
+- [x] Implement everything except the ranking inside `suspects` — return candidate positions in ascending order for now. **The ranking heuristic is reserved for the repository owner** (see "Owner contribution" below).
+- [x] Tests pass.
+- [x] Write `vectors/codes.json`: `[{ "input", "ok", "code"?, "error"?, "issuable"? }]` with every case above plus ten more valid codes across slugs `GCB`, `UG`, `KNUST`-style 4-letter `KNUS`, `AB`.
+- [x] Add a test that replays `codes.json`. Commit `Add code parsing and check character (TS)`.
 
 **Owner contribution.** A mod-37 checksum detects an error but cannot locate it: for most positions there is exactly one replacement character that would repair the checksum. `rankSuspects(typed: string, candidates: {position:number, typed:string, repair:string}[]): number[]` decides which position the user is told to re-check. Options: prefer pairs that look alike (`8/B`, `5/S`, `2/Z`, `U/V`, `0/D`), prefer adjacent-key slips, prefer later positions (attention fades), or return several. 5–10 lines; it is what a person sees when they mistype.
 
@@ -134,9 +134,9 @@ func IsIssuable(c Code) bool
 
 `internal/vectors`: `func Dir() string` (walks up from the test's working directory to the first `vectors/` directory), `func Load(t testing.TB, rel string, v any)`.
 
-- [ ] Table test replaying `vectors/codes.json` plus the `CheckChar` constants from Task 2. Run → fails.
-- [ ] Implement; `Suspects` ordering must equal the TS output for every `codes.json` entry (port the owner's `rankSuspects` once written).
-- [ ] `go test ./code/...` passes; `go vet ./...` clean. Commit `Add code parsing and check character (Go)`.
+- [x] Table test replaying `vectors/codes.json` plus the `CheckChar` constants from Task 2. Run → fails.
+- [x] Implement; `Suspects` ordering must equal the TS output for every `codes.json` entry (port the owner's `rankSuspects` once written).
+- [x] `go test ./code/...` passes; `go vet ./...` clean. Commit `Add code parsing and check character (Go)`.
 
 ---
 
@@ -159,8 +159,8 @@ export async function canonicalize(doc: object, loader?: DocumentLoader): Promis
 
 `canonicalize`: `jsonld.canonize(doc, { algorithm: 'RDFC-1.0', format: 'application/n-quads', documentLoader, safe: true })`. `safe: true` makes jsonld throw on any property that is not defined in a context instead of dropping it.
 
-- [ ] Tests: loader returns both contexts; any other URL rejects with `UnknownContextError`; a minimal `BankReferenceLetter` canonicalizes to a snapshot committed as `vectors/canon/minimal.nq`; key order in the input does not change output; an undefined property throws (safe mode); a credential with an extra remote `@context` throws `UnknownContextError` and performs no fetch (assert with a `globalThis.fetch` spy).
-- [ ] Implement. Commit `Add contexts, static loader and canonicalization (TS)`.
+- [x] Tests: loader returns both contexts; any other URL rejects with `UnknownContextError`; a minimal `BankReferenceLetter` canonicalizes to a snapshot committed as `vectors/canon/minimal.nq`; key order in the input does not change output; an undefined property throws (safe mode); a credential with an extra remote `@context` throws `UnknownContextError` and performs no fetch (assert with a `globalThis.fetch` spy).
+- [x] Implement. Commit `Add contexts, static loader and canonicalization (TS)`.
 
 ---
 
@@ -182,9 +182,9 @@ func Canonicalize(doc map[string]any, loader ld.DocumentLoader) (string, error)
 
 `Canonicalize`: `ld.NewJsonLdProcessor().Normalize` with `Algorithm = ld.AlgorithmURDNA2015`, `Format = "application/n-quads"`, `SafeMode = true` where the pinned json-gold version supports it; otherwise expand first and reject when any key was dropped (compare property counts against the compacted input) — decide by reading the pinned version's `JsonLdOptions`.
 
-- [ ] Test: `vectors/canon/minimal.nq` reproduced byte for byte from the same input JSON (store the input as `vectors/canon/minimal.json`); unknown context → `ErrUnknownContext`; undefined property → error.
-- [ ] `scripts/check-contexts.sh`: `cmp` each JSON in `packages/vc/src/context/` against `vc-go/vcctx/`.
-- [ ] If any byte differs between TS and Go N-Quads, stop and resolve before continuing: every later task depends on this. Commit `Add contexts and canonicalization (Go)`.
+- [x] Test: `vectors/canon/minimal.nq` reproduced byte for byte from the same input JSON (store the input as `vectors/canon/minimal.json`); unknown context → `ErrUnknownContext`; undefined property → error.
+- [x] `scripts/check-contexts.sh`: `cmp` each JSON in `packages/vc/src/context/` against `vc-go/vcctx/`.
+- [x] If any byte differs between TS and Go N-Quads, stop and resolve before continuing: every later task depends on this. Commit `Add contexts and canonicalization (Go)`.
 
 ---
 
@@ -207,8 +207,8 @@ export function jsonSchemaFor(type: ClaimType): object                 // z.toJS
 
 Rules: every object `.strict()`. `@context` must equal exactly `[CREDENTIALS_V2, CLAIMS_V1]`. `type` exactly `['VerifiableCredential', <ClaimType>]`. `issuer` matches `^did:web:vemphy\.com:i:[a-z]{2,4}$`. `id` matches `^urn:vemphy:claim:[A-Z]{2,4}-[0-9A-Z]{4}-[0-9A-Z*~$=]{4}$`. Dates: `xsd:date` fields `^\d{4}-\d{2}-\d{2}$` and a real calendar date; `validFrom`/`validUntil`/`created` are `z.iso.datetime({offset: true})`. `accountNumberLast4` `^\d{4}$`. Strings trimmed, 1–200 chars. `endDate >= startDate`; `currentlyEmployed === true` forbids `endDate`.
 
-- [ ] Tests: one accepted and at least three rejected documents per type (unknown field, bad enum, bad date `2026-02-30`); extra context rejected; `defaultDisclosure` entries are all keys of the matching schema; `jsonSchemaFor` output has `additionalProperties: false`.
-- [ ] Implement. Commit `Add claim schemas`.
+- [x] Tests: one accepted and at least three rejected documents per type (unknown field, bad enum, bad date `2026-02-30`); extra context rejected; `defaultDisclosure` entries are all keys of the matching schema; `jsonSchemaFor` output has `additionalProperties: false`.
+- [x] Implement. Commit `Add claim schemas`.
 
 Go performs the same shape checks with plain structs and `json.Decoder.DisallowUnknownFields` inside `verify` (Task 12); it does not need form-level rules.
 
@@ -233,8 +233,8 @@ export function findKey(doc: DidDocument, verificationMethod: string):
 
 `findKey` requires `vm.controller === doc.id`, `vm.id === verificationMethod`, `vm.type === 'Multikey'`, and that the verification method's DID part equals `doc.id`.
 
-- [ ] Tests: round trip; the W3C key `z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2` decodes to 32 bytes and re-encodes identically; wrong multicodec prefix rejected; `didToUrl` rejects any host other than `vemphy.com` and any path shape other than `i:<slug>`; percent-encoded or port-bearing DIDs rejected; `findKey` ignores a method whose `controller` differs.
-- [ ] Implement both. Commit `Add multikey and did:web helpers`.
+- [x] Tests: round trip; the W3C key `z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2` decodes to 32 bytes and re-encodes identically; wrong multicodec prefix rejected; `didToUrl` rejects any host other than `vemphy.com` and any path shape other than `i:<slug>`; percent-encoded or port-bearing DIDs rejected; `findKey` ignores a method whose `controller` differs.
+- [x] Implement both. Commit `Add multikey and did:web helpers`.
 
 ---
 
@@ -254,9 +254,9 @@ export async function verifyProof(signed: object, publicKey: Uint8Array, loader?
 
 `proofOptions` = proof minus `proofValue`, plus the document's `@context`. `createProof` takes `created` from the caller (no clock). `verifyProof` returns `false` for a bad signature and throws only for canonicalization errors.
 
-- [ ] Copy the `eddsa-rdfc-2022` test vector from the W3C "Data Integrity EdDSA Cryptosuites" specification (appendix "Test Vectors → Representation: eddsa-rdfc-2022") verbatim into `vectors/w3c/eddsa-rdfc-2022.json`: key pair, unsigned credential, canonical document, document hash, proof options, canonical proof options, proof hash, signature, signed credential. Include the examples context it uses so `staticLoader(extra)` can serve it.
-- [ ] Known-answer tests: canonical document equals the fixture string; both SHA-256 hex digests equal; `createProof` reproduces the fixture `proofValue` exactly; `verifyProof` true; flipping one character of any subject value → false.
-- [ ] Implement with `@noble/ed25519` (set `etc.sha512Sync` from `@noble/hashes`). Commit `Add eddsa-rdfc-2022 proofs (TS)`.
+- [x] Copy the `eddsa-rdfc-2022` test vector from the W3C "Data Integrity EdDSA Cryptosuites" specification (appendix "Test Vectors → Representation: eddsa-rdfc-2022") verbatim into `vectors/w3c/eddsa-rdfc-2022.json`: key pair, unsigned credential, canonical document, document hash, proof options, canonical proof options, proof hash, signature, signed credential. Include the examples context it uses so `staticLoader(extra)` can serve it.
+- [x] Known-answer tests: canonical document equals the fixture string; both SHA-256 hex digests equal; `createProof` reproduces the fixture `proofValue` exactly; `verifyProof` true; flipping one character of any subject value → false.
+- [x] Implement with `@noble/ed25519` (set `etc.sha512Sync` from `@noble/hashes`). Commit `Add eddsa-rdfc-2022 proofs (TS)`.
 
 ---
 
@@ -277,8 +277,8 @@ func Create(ctx context.Context, unsigned map[string]any, s Signer, created time
 func Verify(signed map[string]any, publicKey ed25519.PublicKey, loader ld.DocumentLoader) (bool, error)
 ```
 
-- [ ] Same known-answer tests against `vectors/w3c/eddsa-rdfc-2022.json`. `Create` formats `created` as RFC 3339 UTC with `Z`, second precision — identical to the TS side.
-- [ ] Implement. Commit `Add eddsa-rdfc-2022 proofs (Go)`.
+- [x] Same known-answer tests against `vectors/w3c/eddsa-rdfc-2022.json`. `Create` formats `created` as RFC 3339 UTC with `Z`, second precision — identical to the TS side.
+- [x] Implement. Commit `Add eddsa-rdfc-2022 proofs (Go)`.
 
 ---
 
@@ -298,8 +298,8 @@ export function setBit(bits: Uint8Array, index: number): void
 
 Go: `Decode`, `Encode`, `Get`, `Set` with the same semantics. Bit order is most-significant-bit first, per Bitstring Status List 1.0.
 
-- [ ] Tests: empty list round trip; set index 0 → first byte `0x80`; set 131,071 → last byte `0x01`; index out of range throws; wrong decompressed length rejected; decompression capped at 16,384 bytes (a gzip bomb fixture of 10 MB of zeros is rejected without allocating it); a list encoded in TS decodes in Go and the reverse (fixture in `vectors/status/`).
-- [ ] Implement. Commit `Add bitstring status lists`.
+- [x] Tests: empty list round trip; set index 0 → first byte `0x80`; set 131,071 → last byte `0x01`; index out of range throws; wrong decompressed length rejected; decompression capped at 16,384 bytes (a gzip bomb fixture of 10 MB of zeros is rejected without allocating it); a list encoded in TS decodes in Go and the reverse (fixture in `vectors/status/`).
+- [x] Implement. Commit `Add bitstring status lists`.
 
 ---
 
@@ -326,11 +326,11 @@ Order exactly as the design table (shape → DID/key → key window → signatur
 
 Generator: seeds in `vectors/keys/test-seeds.json` with a top-level `"warning": "TEST KEYS. Public. Never use outside tests."`. Issuers `gcb` (keys `key-1` retired, `key-2` active, `key-3` revoked at a fixed instant), `ug`, `emp`. Fixed `now = 2026-06-01T12:00:00Z`. Emits the twelve vectors in the design, DID documents, status lists, `canon/<name>.nq`, and `expected.json` = `{ now, vectors: { "<name>": { result, reason? } } }`. Output is stable: sorted keys, two-space indent, trailing newline.
 
-- [ ] Write `verify.test.ts` first as a loop over `expected.json` with file-backed `resolveDid` / `fetchStatusList` — it fails because no vectors exist.
-- [ ] Add targeted tests: `resolveDid` rejecting → `unknown/did_unresolvable`; `fetchStatusList` rejecting → `unknown/status_list_unverifiable`; never throws on `null`, `42`, `{}`; a `valid` result has no `reason`.
-- [ ] Implement `verify.ts`, then the generator; run `pnpm gen:vectors`; tests pass.
-- [ ] Run the generator twice; `git status --porcelain vectors/` is empty after the second run.
-- [ ] Commit `Add verifyCredential and test vectors`.
+- [x] Write `verify.test.ts` first as a loop over `expected.json` with file-backed `resolveDid` / `fetchStatusList` — it fails because no vectors exist.
+- [x] Add targeted tests: `resolveDid` rejecting → `unknown/did_unresolvable`; `fetchStatusList` rejecting → `unknown/status_list_unverifiable`; never throws on `null`, `42`, `{}`; a `valid` result has no `reason`.
+- [x] Implement `verify.ts`, then the generator; run `pnpm gen:vectors`; tests pass.
+- [x] Run the generator twice; `git status --porcelain vectors/` is empty after the second run.
+- [x] Commit `Add verifyCredential and test vectors`.
 
 ---
 
@@ -352,9 +352,9 @@ type Outcome struct{ Result Result; Reason Reason; Checks []Check }
 func Credential(ctx context.Context, raw []byte, deps Deps) Outcome
 ```
 
-- [ ] Test: loop over `expected.json`; result and reason must both match. Second test: canonicalize every `vectors/claims/*.json` (without proof) and compare with `vectors/canon/<name>.nq` byte for byte.
-- [ ] Implement; shape checks via typed structs with `DisallowUnknownFields`, exact `@context` and `type` comparison.
-- [ ] Commit `Add credential verification (Go)`.
+- [x] Test: loop over `expected.json`; result and reason must both match. Second test: canonicalize every `vectors/claims/*.json` (without proof) and compare with `vectors/canon/<name>.nq` byte for byte.
+- [x] Implement; shape checks via typed structs with `DisallowUnknownFields`, exact `@context` and `type` comparison.
+- [x] Commit `Add credential verification (Go)`.
 
 ---
 
@@ -364,8 +364,8 @@ func Credential(ctx context.Context, raw []byte, deps Deps) Outcome
 
 `vemphy-vc verify <file> [--now <iso>] [--did-doc <file>] [--status-list <file>] [--vectors <dir>] [--verbose]`. Resolution order for DID documents and status lists: explicit flag → `--vectors` directory or a `vectors/` directory found by walking up from the file → HTTPS fetch. When `--now` is absent and the file lives under a `vectors/` directory, `expected.json`'s `now` is used so `npx @vemphy/vc verify vectors/claims/gcb-001.json` prints `valid` deterministically. Prints the result word only; `--verbose` adds reason and checks on stderr. Exit 0 `valid`, 1 otherwise, 2 usage.
 
-- [ ] Tests run the built CLI with `node:child_process`: `gcb-001` → `valid`/0; `gcb-004` → `revoked`/1; missing file → 2; with `fetch` stubbed to throw, `gcb-001` still prints `valid` (offline proof for acceptance criterion 1).
-- [ ] Implement with `node:util` `parseArgs` (no CLI dependency). Commit `Add verify CLI`.
+- [x] Tests run the built CLI with `node:child_process`: `gcb-001` → `valid`/0; `gcb-004` → `revoked`/1; missing file → 2; with `fetch` stubbed to throw, `gcb-001` still prints `valid` (offline proof for acceptance criterion 1).
+- [x] Implement with `node:util` `parseArgs` (no CLI dependency). Commit `Add verify CLI`.
 
 ---
 
@@ -381,7 +381,7 @@ func Credential(ctx context.Context, raw []byte, deps Deps) Outcome
 
 READMEs: root explains the repository and one command to run everything (`pnpm install && pnpm test && (cd vc-go && go test ./...)`). Package README opens with the ten-line verification example using `verifyCredential` with `fetch`-based resolvers, then the CLI, then the four results and what each means.
 
-- [ ] Run each CI step locally in order; all pass. Commit `Add interop workflow, publish workflow and READMEs`. Push.
+- [x] Run each CI step locally in order; all pass. Commit `Add interop workflow, publish workflow and READMEs`. Push.
 
 ---
 
