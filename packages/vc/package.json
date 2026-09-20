@@ -3,17 +3,51 @@
   "version": "0.0.0",
   "description": "Verify Vemphy claims: W3C Verifiable Credentials 2.0, eddsa-rdfc-2022, Bitstring Status List.",
   "license": "Apache-2.0",
-  "repository": { "type": "git", "url": "git+https://github.com/vemphy/vc.git", "directory": "packages/vc" },
+  "homepage": "https://github.com/vemphy/vc/tree/main/packages/vc#readme",
+  "bugs": {
+    "url": "https://github.com/vemphy/vc/issues"
+  },
+  "keywords": [
+    "verifiable-credentials",
+    "vc",
+    "w3c",
+    "data-integrity",
+    "eddsa-rdfc-2022",
+    "did-web",
+    "bitstring-status-list",
+    "document-verification",
+    "vemphy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vemphy/vc.git",
+    "directory": "packages/vc"
+  },
   "type": "module",
   "sideEffects": false,
-  "engines": { "node": ">=20" },
-  "bin": { "vemphy-vc": "./dist/cli/main.js" },
-  "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./code": { "types": "./dist/code.d.ts", "import": "./dist/code.js" },
-    "./schema": { "types": "./dist/schema/index.d.ts", "import": "./dist/schema/index.js" }
+  "engines": {
+    "node": ">=20"
   },
-  "files": ["dist"],
+  "bin": {
+    "vemphy-vc": "./dist/cli/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./code": {
+      "types": "./dist/code.d.ts",
+      "import": "./dist/code.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "import": "./dist/schema/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
