@@ -11,7 +11,9 @@ import (
 
 	"github.com/vemphy/vc/vc-go/did"
 	"github.com/vemphy/vc/vc-go/proof"
+	"github.com/vemphy/vc/vc-go/schema"
 	"github.com/vemphy/vc/vc-go/status"
+	"github.com/vemphy/vc/vc-go/vcctx"
 )
 
 type Result string
@@ -29,6 +31,7 @@ type Reason string
 
 const (
 	Malformed              Reason = "malformed"
+	ContextUnavailable     Reason = "context_unavailable"
 	DIDUnresolvable        Reason = "did_unresolvable"
 	KeyNotFound            Reason = "key_not_found"
 	KeyWindowViolation     Reason = "key_window_violation"
@@ -45,6 +48,11 @@ type Outcome struct {
 	Result Result  `json:"result"`
 	Reason Reason  `json:"reason,omitempty"`
 	Checks []Check `json:"checks"`
+	// SchemaValid says whether the subject matches the schema the claim names.
+	// It is extra information: it never changes Result, which signature,
+	// status and dates decide. Nil when the signature did not hold or the
+	// schema could not be had.
+	SchemaValid *bool `json:"schemaValid,omitempty"`
 }
 
 // Deps is everything verification needs from outside. Credential reads no
@@ -55,9 +63,19 @@ type Deps struct {
 	ResolveDID func(ctx context.Context, did string) ([]byte, error)
 	// FetchStatusList returns the status list credential at a URL.
 	FetchStatusList func(ctx context.Context, url string) ([]byte, error)
-	// DocumentLoader is for tests. Nil means the bundled contexts.
+	// DocumentLoader loads JSON-LD contexts. Nil means the bundled ones,
+	// offline: the W3C context and every core type. Give it a vcctx.Resolver
+	// with a cache to verify claims of an issuer's own types.
 	DocumentLoader ld.DocumentLoader
+	// FetchSchema returns the schema document at a URL. Nil means the bundled
+	// core schemas, offline.
+	FetchSchema func(ctx context.Context, url string) ([]byte, error)
 }
+
+var (
+	bundledContexts = vcctx.New(vcctx.Options{Allowlist: []string{}})
+	bundledSchemas  = vcctx.NewSchemas(vcctx.Options{Allowlist: []string{}})
+)
 
 // Credential verifies a claim. Whatever goes wrong, the answer is one of the
 // four results.
@@ -66,9 +84,14 @@ type Deps struct {
 // a document that has been altered can only ever come back Unknown.
 func Credential(ctx context.Context, raw []byte, deps Deps) Outcome {
 	var checks []Check
+	var schemaValid *bool
 	pass := func(name string) { checks = append(checks, Check{name, true}) }
 	stop := func(name string, result Result, reason Reason) Outcome {
-		return Outcome{result, reason, append(checks, Check{name, false})}
+		return Outcome{result, reason, append(checks, Check{name, false}), schemaValid}
+	}
+	loader := deps.DocumentLoader
+	if loader == nil {
+		loader = bundledContexts
 	}
 
 	// 1. Shape.
@@ -81,6 +104,12 @@ func Credential(ctx context.Context, raw []byte, deps Deps) Outcome {
 		return stop("shape", Unknown, Malformed)
 	}
 	pass("shape")
+
+	// The vocabulary the claim is written in. Without it nothing can be said about the signature.
+	if _, err := loader.LoadDocument(c.Context[1]); err != nil {
+		return stop("context", Unknown, ContextUnavailable)
+	}
+	pass("context")
 
 	// 2. Issuer key.
 	didDocument, err := resolve(ctx, deps, c.Issuer)
@@ -102,10 +131,11 @@ func Credential(ctx context.Context, raw []byte, deps Deps) Outcome {
 	pass("key_window")
 
 	// 4. Signature.
-	if ok, err := proof.Verify(document, key.PublicKey, deps.DocumentLoader); err != nil || !ok {
+	if ok, err := proof.Verify(document, key.PublicKey, loader); err != nil || !ok {
 		return stop("signature", Unknown, SignatureFailure)
 	}
 	pass("signature")
+	schemaValid = matchesSchema(ctx, deps, c)
 
 	// 5. The status list is itself a signed, short-lived credential from the same issuer.
 	bits := loadStatusList(ctx, deps, c, didDocument)
@@ -126,7 +156,39 @@ func Credential(ctx context.Context, raw []byte, deps Deps) Outcome {
 	}
 	pass("validity_period")
 
-	return Outcome{Result: Valid, Checks: checks}
+	return Outcome{Result: Valid, Checks: checks, SchemaValid: schemaValid}
+}
+
+// A claim issued under claims/v1 names no schema; version 1 of the core type
+// of the same name describes it.
+func matchesSchema(ctx context.Context, deps Deps, c *credential) *bool {
+	answer := func(b bool) *bool { return &b }
+	var s *schema.Schema
+	if c.legacy {
+		core, ok := schema.CoreSchema(c.ref.Name, 1)
+		if !ok {
+			return nil
+		}
+		s = core
+	} else {
+		fetch := deps.FetchSchema
+		if fetch == nil {
+			fetch = bundledSchemas.Get
+		}
+		document, err := fetch(ctx, c.CredentialSchema.ID)
+		if err != nil {
+			return nil
+		}
+		inner, ok := schema.SubjectSchemaFrom(document)
+		if !ok {
+			return nil
+		}
+		// Parse refuses anything outside the restricted subset before compiling it.
+		if s, err = schema.Parse(inner); err != nil {
+			return answer(false)
+		}
+	}
+	return answer(len(s.ValidateSubject(c.CredentialSubject)) == 0)
 }
 
 func resolve(ctx context.Context, deps Deps, issuer string) (*did.Document, error) {

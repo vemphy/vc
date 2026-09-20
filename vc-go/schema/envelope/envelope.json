@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vemphy.com/schemas/envelope/v1.json",
+  "title": "Vemphy claim envelope",
+  "description": "Everything in a Vemphy claim outside credentialSubject, plus the status list credential and the parts of a DID document a verifier reads. Rules that span fields (every part names the same issuer; validUntil is after validFrom; context, type and credentialSchema agree) are checked in code.",
+  "$defs": {
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "cryptosuite",
+        "created",
+        "verificationMethod",
+        "proofPurpose",
+        "proofValue"
+      ],
+      "properties": {
+        "type": {
+          "const": "DataIntegrityProof"
+        },
+        "cryptosuite": {
+          "const": "eddsa-rdfc-2022"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "verificationMethod": {
+          "type": "string",
+          "pattern": "^did:web:vemphy\\.com:i:[a-z]{2,4}#key-[1-9]\\d*$"
+        },
+        "proofPurpose": {
+          "const": "assertionMethod"
+        },
+        "proofValue": {
+          "type": "string",
+          "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$"
+        }
+      }
+    },
+    "statusEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "statusPurpose",
+        "statusListIndex",
+        "statusListCredential"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "const": "BitstringStatusListEntry"
+        },
+        "statusPurpose": {
+          "const": "revocation"
+        },
+        "statusListIndex": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,5})$"
+        },
+        "statusListCredential": {
+          "type": "string",
+          "pattern": "^https://vemphy\\.com/i/[a-z]{2,4}/status/[1-9]\\d*$"
+        }
+      }
+    },
+    "unsignedCredential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "@context",
+        "id",
+        "type",
+        "issuer",
+        "validFrom",
+        "credentialSubject",
+        "credentialStatus"
+      ],
+      "properties": {
+        "@context": {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            {
+              "const": "https://www.w3.org/ns/credentials/v2"
+            },
+            {
+              "type": "string",
+              "pattern": "^https://vemphy\\.com/ns/(claims/v1|core/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5}|i/[a-z]{2,4}/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5})$"
+            }
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^urn:vemphy:claim:[A-Z]{2,4}-[0-9A-Z]{4}-[0-9A-Z]{3}[0-9A-Z*~$=]$"
+        },
+        "type": {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            {
+              "const": "VerifiableCredential"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Z][a-zA-Z0-9]{1,39}$"
+            }
+          ]
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^did:web:vemphy\\.com:i:[a-z]{2,4}$"
+        },
+        "validFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "credentialSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "type"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^https://vemphy\\.com/schemas/(core/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5}|i/[a-z]{2,4}/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5})\\.json$"
+            },
+            "type": {
+              "const": "JsonSchema"
+            }
+          }
+        },
+        "credentialSubject": {
+          "type": "object"
+        },
+        "credentialStatus": {
+          "$ref": "#/$defs/statusEntry"
+        }
+      }
+    },
+    "credential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "@context",
+        "id",
+        "type",
+        "issuer",
+        "validFrom",
+        "credentialSubject",
+        "credentialStatus",
+        "proof"
+      ],
+      "properties": {
+        "@context": {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            {
+              "const": "https://www.w3.org/ns/credentials/v2"
+            },
+            {
+              "type": "string",
+              "pattern": "^https://vemphy\\.com/ns/(claims/v1|core/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5}|i/[a-z]{2,4}/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5})$"
+            }
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^urn:vemphy:claim:[A-Z]{2,4}-[0-9A-Z]{4}-[0-9A-Z]{3}[0-9A-Z*~$=]$"
+        },
+        "type": {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            {
+              "const": "VerifiableCredential"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Z][a-zA-Z0-9]{1,39}$"
+            }
+          ]
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^did:web:vemphy\\.com:i:[a-z]{2,4}$"
+        },
+        "validFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "credentialSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "type"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^https://vemphy\\.com/schemas/(core/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5}|i/[a-z]{2,4}/[A-Z][a-zA-Z0-9]{1,39}/v[1-9]\\d{0,5})\\.json$"
+            },
+            "type": {
+              "const": "JsonSchema"
+            }
+          }
+        },
+        "credentialSubject": {
+          "type": "object"
+        },
+        "credentialStatus": {
+          "$ref": "#/$defs/statusEntry"
+        },
+        "proof": {
+          "$ref": "#/$defs/proof"
+        }
+      }
+    },
+    "statusListCredential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "@context",
+        "id",
+        "type",
+        "issuer",
+        "validFrom",
+        "validUntil",
+        "credentialSubject",
+        "proof"
+      ],
+      "properties": {
+        "@context": {
+          "type": "array",
+          "minItems": 1,
+          "items": false,
+          "prefixItems": [
+            {
+              "const": "https://www.w3.org/ns/credentials/v2"
+            }
+          ]
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^https://vemphy\\.com/i/[a-z]{2,4}/status/[1-9]\\d*$"
+        },
+        "type": {
+          "type": "array",
+          "minItems": 2,
+          "items": false,
+          "prefixItems": [
+            {
+              "const": "VerifiableCredential"
+            },
+            {
+              "const": "BitstringStatusListCredential"
+            }
+          ]
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "^did:web:vemphy\\.com:i:[a-z]{2,4}$"
+        },
+        "validFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "credentialSubject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "type",
+            "statusPurpose",
+            "encodedList"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "const": "BitstringStatusList"
+            },
+            "statusPurpose": {
+              "const": "revocation"
+            },
+            "encodedList": {
+              "type": "string",
+              "pattern": "^u[A-Za-z0-9_-]+$"
+            }
+          }
+        },
+        "proof": {
+          "$ref": "#/$defs/proof"
+        }
+      }
+    },
+    "verificationMethod": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "type",
+        "controller",
+        "publicKeyMultibase"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "const": "Multikey"
+        },
+        "controller": {
+          "type": "string"
+        },
+        "publicKeyMultibase": {
+          "type": "string",
+          "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$"
+        },
+        "revoked": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "didDocument": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "verificationMethod",
+        "assertionMethod"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^did:web:vemphy\\.com:i:[a-z]{2,4}$"
+        },
+        "verificationMethod": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/verificationMethod"
+          }
+        },
+        "assertionMethod": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

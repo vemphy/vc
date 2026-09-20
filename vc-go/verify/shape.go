@@ -1,36 +1,22 @@
 package verify
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/vemphy/vc/vc-go/schema"
 	"github.com/vemphy/vc/vc-go/status"
-	"github.com/vemphy/vc/vc-go/vcctx"
 )
 
-// The shape rules here are the same ones the TypeScript package expresses as
-// zod schemas in packages/vc/src/schema. A document either side refuses, the
-// other refuses too.
-
-const slug = `[a-z]{2,4}`
-
-var (
-	issuerPattern     = regexp.MustCompile(`^did:web:vemphy\.com:i:` + slug + `$`)
-	claimIDPattern    = regexp.MustCompile(`^urn:vemphy:claim:[A-Z]{2,4}-[0-9A-Z]{4}-[0-9A-Z]{3}[0-9A-Z*~$=]$`)
-	keyPattern        = regexp.MustCompile(`^did:web:vemphy\.com:i:` + slug + `#key-[1-9]\d*$`)
-	proofValuePattern = regexp.MustCompile(`^z[1-9A-HJ-NP-Za-km-z]+$`)
-	listURLPattern    = regexp.MustCompile(`^https://vemphy\.com/i/` + slug + `/status/[1-9]\d*$`)
-	indexPattern      = regexp.MustCompile(`^(0|[1-9]\d*)$`)
-	encodedPattern    = regexp.MustCompile(`^u[A-Za-z0-9_-]+$`)
-	instantPattern    = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$`)
-)
+// The structure of everything outside credentialSubject is described by
+// schema/envelope/envelope.json, shared with the TypeScript package. The rules
+// below span more than one field, which JSON Schema cannot say. A document
+// either side refuses, the other refuses too.
 
 type proofShape struct {
 	Type               string `json:"type"`
@@ -50,15 +36,23 @@ type statusEntry struct {
 }
 
 type credential struct {
-	Context           []string        `json:"@context"`
-	ID                string          `json:"id"`
-	Type              []string        `json:"type"`
-	Issuer            string          `json:"issuer"`
-	ValidFrom         string          `json:"validFrom"`
-	ValidUntil        *string         `json:"validUntil"`
+	Context          []string `json:"@context"`
+	ID               string   `json:"id"`
+	Type             []string `json:"type"`
+	Issuer           string   `json:"issuer"`
+	ValidFrom        string   `json:"validFrom"`
+	ValidUntil       *string  `json:"validUntil"`
+	CredentialSchema *struct {
+		ID   string `json:"id"`
+		Type string `json:"type"`
+	} `json:"credentialSchema"`
 	CredentialSubject json.RawMessage `json:"credentialSubject"`
 	CredentialStatus  *statusEntry    `json:"credentialStatus"`
 	Proof             *proofShape     `json:"proof"`
+
+	// ref is the type version the claim is issued under; legacy is set for a claims/v1 claim.
+	ref    schema.Ref
+	legacy bool
 
 	index      int
 	validFrom  time.Time
@@ -84,128 +78,45 @@ type statusListCredential struct {
 	validFrom, validUntil, created time.Time
 }
 
-func strictDecode(raw []byte, v any) error {
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(v); err != nil {
+// decode checks raw against an envelope definition and then reads it into v.
+// The schema has already refused unknown and misspelt members, so the
+// case-insensitive matching of encoding/json cannot let anything through.
+func decode(raw []byte, definition string, v any) error {
+	doc, err := schema.Decode(raw)
+	if err != nil {
 		return err
 	}
-	if dec.More() {
-		return errors.New("trailing data")
+	if err := schema.ValidateEnvelope(definition, doc); err != nil {
+		return err
 	}
-	return nil
+	return json.Unmarshal(raw, v)
 }
-
-// encoding/json matches member names to struct fields without regard to case.
-// The schemas do not, so the exact spelling is checked separately.
-func exactKeys(raw []byte, allowed map[string][]string) error {
-	var doc map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return err
-	}
-	check := func(where string, obj map[string]json.RawMessage) error {
-		for name := range obj {
-			found := false
-			for _, a := range allowed[where] {
-				if name == a {
-					found = true
-				}
-			}
-			if !found {
-				return fmt.Errorf("unknown member %q", name)
-			}
-		}
-		return nil
-	}
-	if err := check("", doc); err != nil {
-		return err
-	}
-	for name := range allowed {
-		if name == "" || doc[name] == nil {
-			continue
-		}
-		var nested map[string]json.RawMessage
-		if err := json.Unmarshal(doc[name], &nested); err != nil {
-			return fmt.Errorf("%s must be an object", name)
-		}
-		if err := check(name, nested); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-var (
-	proofKeys      = []string{"type", "cryptosuite", "created", "verificationMethod", "proofPurpose", "proofValue"}
-	credentialKeys = map[string][]string{
-		"":                 {"@context", "id", "type", "issuer", "validFrom", "validUntil", "credentialSubject", "credentialStatus", "proof"},
-		"credentialStatus": {"id", "type", "statusPurpose", "statusListIndex", "statusListCredential"},
-		"proof":            proofKeys,
-	}
-	statusListKeys = map[string][]string{
-		"":                  {"@context", "id", "type", "issuer", "validFrom", "validUntil", "credentialSubject", "proof"},
-		"credentialSubject": {"id", "type", "statusPurpose", "encodedList"},
-		"proof":             proofKeys,
-	}
-)
 
 func parseInstant(s string) (time.Time, error) {
-	if !instantPattern.MatchString(s) {
+	if !schema.IsDateTime(s) {
 		return time.Time{}, fmt.Errorf("%q is not an instant with an offset", s)
 	}
 	return time.Parse(time.RFC3339Nano, s)
 }
 
-func equal(a []string, b ...string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func slugOfDID(did string) string { return did[strings.LastIndexByte(did, ':')+1:] }
 
 func (p *proofShape) check(issuer string) (time.Time, error) {
-	if p == nil {
-		return time.Time{}, errors.New("proof is required")
-	}
-	if p.Type != "DataIntegrityProof" || p.Cryptosuite != "eddsa-rdfc-2022" || p.ProofPurpose != "assertionMethod" {
-		return time.Time{}, errors.New("proof is not an eddsa-rdfc-2022 assertion")
-	}
-	if !keyPattern.MatchString(p.VerificationMethod) || !strings.HasPrefix(p.VerificationMethod, issuer+"#") {
+	if !strings.HasPrefix(p.VerificationMethod, issuer+"#") {
 		return time.Time{}, errors.New("key does not belong to the issuer")
-	}
-	if !proofValuePattern.MatchString(p.ProofValue) {
-		return time.Time{}, errors.New("proofValue is not base58btc")
 	}
 	return parseInstant(p.Created)
 }
 
 func parseCredential(raw []byte) (*credential, error) {
 	var c credential
-	if err := strictDecode(raw, &c); err != nil {
+	if err := decode(raw, "credential", &c); err != nil {
 		return nil, err
 	}
-	if err := exactKeys(raw, credentialKeys); err != nil {
-		return nil, err
-	}
-	if !equal(c.Context, vcctx.CredentialsV2, vcctx.ClaimsV1) {
-		return nil, errors.New("@context must be exactly the credentials and claims contexts")
-	}
-	if len(c.Type) != 2 || c.Type[0] != "VerifiableCredential" {
-		return nil, errors.New("type must be VerifiableCredential and one claim type")
-	}
-	if !schema.IsClaimType(c.Type[1]) {
-		return nil, fmt.Errorf("unknown claim type %q", c.Type[1])
-	}
-	if !issuerPattern.MatchString(c.Issuer) || !claimIDPattern.MatchString(c.ID) {
-		return nil, errors.New("issuer or id is malformed")
-	}
+
+	// Everything in a claim has to name the same issuer: the slug in the code,
+	// the issuer DID, the status list URL, the key that signed it, and the
+	// vocabulary it uses when that belongs to an issuer.
 	issuerSlug := slugOfDID(c.Issuer)
 	if !strings.HasPrefix(c.ID, "urn:vemphy:claim:"+strings.ToUpper(issuerSlug)+"-") {
 		return nil, errors.New("code does not belong to the issuer")
@@ -227,12 +138,6 @@ func parseCredential(raw []byte) (*credential, error) {
 	}
 
 	s := c.CredentialStatus
-	if s == nil || s.Type != "BitstringStatusListEntry" || s.StatusPurpose != "revocation" {
-		return nil, errors.New("credentialStatus must be a revocation BitstringStatusListEntry")
-	}
-	if !listURLPattern.MatchString(s.StatusListCredential) || !indexPattern.MatchString(s.StatusListIndex) {
-		return nil, errors.New("credentialStatus is malformed")
-	}
 	if c.index, err = strconv.Atoi(s.StatusListIndex); err != nil || c.index >= status.ListBits {
 		return nil, errors.New("status index is past the end of the list")
 	}
@@ -242,37 +147,46 @@ func parseCredential(raw []byte) (*credential, error) {
 	if !strings.HasPrefix(s.StatusListCredential, "https://vemphy.com/i/"+issuerSlug+"/status/") {
 		return nil, errors.New("status list does not belong to the issuer")
 	}
-
 	if c.created, err = c.Proof.check(c.Issuer); err != nil {
 		return nil, err
 	}
-	if err := schema.ValidateSubject(c.Type[1], c.CredentialSubject); err != nil {
-		return nil, fmt.Errorf("credentialSubject: %w", err)
+
+	claimType := c.Type[1]
+	if c.Context[1] == schema.LegacyContext {
+		if !slices.Contains(schema.LegacyTypes, claimType) {
+			return nil, errors.New("type is not defined by claims/v1")
+		}
+		if c.CredentialSchema != nil {
+			return nil, errors.New("a claims/v1 claim has no credentialSchema")
+		}
+		c.legacy, c.ref = true, schema.Ref{Name: claimType, Version: 1}
+		return &c, nil
 	}
+	ref, ok := schema.ParseContextURL(c.Context[1])
+	switch {
+	case !ok:
+		return nil, errors.New("context is not a Vemphy type context")
+	case ref.Name != claimType:
+		return nil, errors.New("type does not match its context")
+	case ref.Issuer != "" && ref.Issuer != issuerSlug:
+		return nil, errors.New("context belongs to another issuer")
+	case c.CredentialSchema == nil || c.CredentialSchema.ID != ref.SchemaURL():
+		return nil, errors.New("credentialSchema does not match the context")
+	}
+	c.ref = ref
 	return &c, nil
 }
 
 func parseStatusList(raw []byte) (*statusListCredential, error) {
 	var l statusListCredential
-	if err := strictDecode(raw, &l); err != nil {
+	if err := decode(raw, "statusListCredential", &l); err != nil {
 		return nil, err
-	}
-	if err := exactKeys(raw, statusListKeys); err != nil {
-		return nil, err
-	}
-	if !equal(l.Context, vcctx.CredentialsV2) || !equal(l.Type, "VerifiableCredential", "BitstringStatusListCredential") {
-		return nil, errors.New("not a BitstringStatusListCredential")
-	}
-	if !issuerPattern.MatchString(l.Issuer) || !listURLPattern.MatchString(l.ID) {
-		return nil, errors.New("issuer or id is malformed")
 	}
 	if !strings.HasPrefix(l.ID, "https://vemphy.com/i/"+slugOfDID(l.Issuer)+"/status/") {
 		return nil, errors.New("status list does not belong to the issuer")
 	}
-	s := l.CredentialSubject
-	if s == nil || s.ID != l.ID+"#list" || s.Type != "BitstringStatusList" || s.StatusPurpose != "revocation" ||
-		!encodedPattern.MatchString(s.EncodedList) {
-		return nil, errors.New("credentialSubject is not a revocation BitstringStatusList")
+	if l.CredentialSubject.ID != l.ID+"#list" {
+		return nil, errors.New("credentialSubject.id must be the list URL followed by #list")
 	}
 	var err error
 	if l.validFrom, err = parseInstant(l.ValidFrom); err != nil {

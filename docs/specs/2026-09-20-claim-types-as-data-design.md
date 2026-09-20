@@ -99,9 +99,11 @@ syntax:
 - quantifiers `*`, `+`, `?`, `{n}`, `{n,}`, `{n,m}` with n, m ≤ 1000, never
   lazy or possessive.
 
-A group that repeats more than once may not contain a quantifier. That rules
-out the shapes that make a backtracking engine take exponential time, which
-matters because a verifier may compile a pattern it has just fetched.
+Both libraries run patterns on RE2 (Go's `regexp`; `re2js` in TypeScript), so
+the dialect is the same on both sides and matching takes linear time. That
+matters because a verifier may compile a pattern it has just fetched. The
+syntax limit remains because a published schema is also read by other
+people's validators, which follow ECMA-262.
 
 ### Formats
 

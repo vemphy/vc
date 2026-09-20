@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "DegreeCertificate",
+    "displayName": {
+      "en": "Degree certificate"
+    }
+  },
+  "properties": {
+    "graduateName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Graduate"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "studentNumber": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Student number"
+        },
+        "disclosable": false,
+        "pii": true,
+        "order": 2
+      }
+    },
+    "qualification": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Qualification"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 3
+      }
+    },
+    "programme": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Programme"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 4
+      }
+    },
+    "classification": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Classification"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 5
+      }
+    },
+    "conferredOn": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Conferred on"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 6
+      }
+    }
+  },
+  "required": [
+    "graduateName",
+    "studentNumber",
+    "qualification",
+    "programme",
+    "conferredOn"
+  ]
+}

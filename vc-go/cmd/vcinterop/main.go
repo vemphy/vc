@@ -5,6 +5,10 @@
 //	vcinterop canon                                   < doc.json    > doc.nq
 //	vcinterop sign --seed <hex> --vm <id> --created <iso> < unsigned.json > signed.json
 //	vcinterop verify --key <publicKeyMultibase>       < signed.json   (exit 0 or 1)
+//	vcinterop context --namespace <iri>               < schema.json > context.json
+//
+// --cache <dir> names a directory of contexts for issuers' own types, as the
+// vemphy-vc command line keeps them. Nothing is ever fetched.
 package main
 
 import (
@@ -17,21 +21,32 @@ import (
 	"os"
 	"time"
 
+	"github.com/piprate/json-gold/ld"
+
 	"github.com/vemphy/vc/vc-go/canon"
 	"github.com/vemphy/vc/vc-go/multibase"
 	"github.com/vemphy/vc/vc-go/proof"
+	"github.com/vemphy/vc/vc-go/schema"
+	"github.com/vemphy/vc/vc-go/vcctx"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fail(2, "usage: vcinterop canon|sign|verify [flags] < document.json")
+		fail(2, "usage: vcinterop canon|sign|verify|context [flags] < document.json")
 	}
 	flags := flag.NewFlagSet(os.Args[1], flag.ExitOnError)
 	seed := flags.String("seed", "", "Ed25519 seed, 64 hex characters (sign)")
 	vm := flags.String("vm", "", "verification method id (sign)")
 	created := flags.String("created", "", "proof date, RFC 3339 (sign)")
 	key := flags.String("key", "", "publicKeyMultibase (verify)")
+	cache := flags.String("cache", "", "directory of cached contexts")
+	namespace := flags.String("namespace", "", "namespace of the generated context (context)")
 	flags.Parse(os.Args[2:])
+
+	var loader ld.DocumentLoader
+	if *cache != "" {
+		loader = vcctx.New(vcctx.Options{Cache: vcctx.DirCache(*cache)})
+	}
 
 	raw, err := io.ReadAll(os.Stdin)
 	if err != nil {
@@ -44,7 +59,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "canon":
-		nquads, err := canon.Canonicalize(doc, nil)
+		nquads, err := canon.Canonicalize(doc, loader)
 		if err != nil {
 			fail(1, err.Error())
 		}
@@ -63,7 +78,7 @@ func main() {
 		if err != nil {
 			fail(2, err.Error())
 		}
-		signed, err := proof.Create(context.Background(), doc, signer, at, nil)
+		signed, err := proof.Create(context.Background(), doc, signer, at, loader)
 		if err != nil {
 			fail(1, err.Error())
 		}
@@ -75,7 +90,7 @@ func main() {
 		if err != nil {
 			fail(2, "--key: "+err.Error())
 		}
-		ok, err := proof.Verify(doc, publicKey, nil)
+		ok, err := proof.Verify(doc, publicKey, loader)
 		if err != nil {
 			fail(1, err.Error())
 		}
@@ -83,6 +98,17 @@ func main() {
 			fail(1, "signature does not match")
 		}
 		fmt.Println("ok")
+
+	case "context":
+		parsed, err := schema.Parse(raw)
+		if err != nil {
+			fail(1, err.Error())
+		}
+		generated := schema.GenerateContext(parsed, *namespace)
+		if err := canon.AssertNoDroppedTerms(parsed, generated, *namespace); err != nil {
+			fail(1, err.Error())
+		}
+		os.Stdout.Write(generated)
 
 	default:
 		fail(2, "unknown command "+os.Args[1])

@@ -50,7 +50,7 @@ const outcome = await verifyCredential(claim, deps)
 // { result: 'unknown', reason: 'status_list_unverifiable', checks: [{ name: 'shape', ok: true }, …] }
 ```
 
-Reasons: `malformed`, `did_unresolvable`, `key_not_found`,
+Reasons: `malformed`, `context_unavailable`, `did_unresolvable`, `key_not_found`,
 `key_window_violation`, `signature_failure`, `status_list_unverifiable`.
 Show people the result word; keep the reason for operators.
 
@@ -60,6 +60,7 @@ Show people the result word; keep the reason for operators.
 npx @vemphy/vc verify claim.json
 npx @vemphy/vc verify claim.json --did-doc did.json --status-list list.json --now 2026-06-01T12:00:00Z
 npx @vemphy/vc verify claim.json --verbose
+npx @vemphy/vc verify claim.json --cache ./contexts --offline
 ```
 
 It prints the one word. The exit status is `0` for `valid`, `1` for anything
@@ -85,25 +86,48 @@ in a browser bundle on its own. Input is case-insensitive; spaces and hyphens
 are ignored; `O` is read as `0`, and `I` and `L` as `1`. `suspects` lists the
 positions most likely to have been mistyped, best first, and may be empty.
 
-## Schemas
+## Claim types
+
+A claim type is a document: a restricted JSON Schema describing the fields of
+`credentialSubject`. Core types (`BankReferenceLetter`, `BankBalanceLetter`,
+`SalaryConfirmation`, `EmploymentLetter`, `DegreeCertificate`,
+`InsuranceCertificate`, `Attestation`) ship with this package. An issuer can
+also define types of its own, which need no release of anything.
 
 ```ts
-import { subjectSchemas, credentialSchema, defaultDisclosure, jsonSchemaFor } from '@vemphy/vc/schema'
+import { coreSchema, labelFor, validateSchema, validateSubject } from '@vemphy/vc/schema'
 
-subjectSchemas.BankReferenceLetter.safeParse(formValues)
-jsonSchemaFor('DegreeCertificate') // JSON Schema 2020-12
+const schema = coreSchema('BankBalanceLetter', 1)!
+validateSubject(schema, formValues)   // [] or [{ field: 'currency', message: '…' }]
+labelFor(schema, 'balanceAsAt', 'fr') // the label in French if the schema has one, else English
+
+validateSchema(draft)                 // [] when `draft` may be published as a claim type
 ```
 
-[zod](https://zod.dev) schemas for the three claim types —
-`BankReferenceLetter`, `DegreeCertificate`, `EmploymentLetter` — and for the
-credential around them. They are the schemas `verifyCredential` applies, so a
-form validated with them cannot produce a claim the verifier will refuse. They
-reject unknown fields: a field the JSON-LD context does not define would be
-left out of what gets signed.
+`validateSchema` applies [`schemas/meta/vemphy-claim-schema.json`](schemas/meta/vemphy-claim-schema.json)
+and the few rules JSON Schema cannot express. `contextFromSchema`,
+`assertNoDroppedTerms` and `credentialSchemaDocument` turn a schema into the
+JSON-LD context and schema document a published type is served with. The raw
+files are importable: `@vemphy/vc/schemas/core/Attestation.v1.json`.
+
+To verify claims of an issuer's own types, give `verifyCredential` a loader
+with a cache and a `fetch`:
+
+```ts
+import { documentLoader, memoryCache, schemaLoader } from '@vemphy/vc'
+
+const documents = { cache: memoryCache(), fetch }
+await verifyCredential(claim, { ...deps, documentLoader: documentLoader(documents), fetchSchema: schemaLoader(documents) })
+```
+
+Contexts come from the bundle, then your cache, then `https://vemphy.com/ns/`
+and nowhere else; see the [repository README](https://github.com/vemphy/vc#custom-types).
+The outcome's `schemaValid` says whether the subject matches its schema. It is
+information, and never changes `result`.
 
 ## What is checked, in order
 
-1. **Shape.** Exactly the two known contexts, one known claim type, no unknown members.
+1. **Shape.** The W3C context and one Vemphy type context, which must be a core type's or the issuer's own; the matching type and `credentialSchema`; no unknown members. Then the type's context must be available.
 2. **Issuer key.** The issuer's DID document is resolved (`did:web:vemphy.com:i:<slug>`)
    and the signing key is found in it, controlled by that issuer.
 3. **Key window.** The key was not revoked or expired when the proof was created.
@@ -116,8 +140,9 @@ left out of what gets signed.
 The signature comes before revocation and dates, so a document that has been
 altered never yields anything but `unknown`.
 
-JSON-LD contexts are bundled. Canonicalization never fetches one, and a claim
-that names any other context is refused.
+The W3C context and every core type's context are bundled. By default nothing
+is fetched, and a context from any origin but the allowlisted ones is refused
+before a request is made.
 
 ## Signing
 

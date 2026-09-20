@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "x-vemphy": {
+    "name": "EmploymentLetter",
+    "displayName": {
+      "en": "Employment letter"
+    }
+  },
+  "properties": {
+    "employeeName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Employee"
+        },
+        "disclosable": true,
+        "pii": true,
+        "order": 1
+      }
+    },
+    "staffNumber": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Staff number"
+        },
+        "disclosable": false,
+        "pii": true,
+        "order": 2
+      }
+    },
+    "jobTitle": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\t\\n\\r ]([^\\t\\n\\r]*[^\\t\\n\\r ])?$",
+      "x-vemphy": {
+        "label": {
+          "en": "Job title"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 3
+      }
+    },
+    "employmentType": {
+      "type": "string",
+      "enum": [
+        "permanent",
+        "contract",
+        "temporary",
+        "internship"
+      ],
+      "x-vemphy": {
+        "label": {
+          "en": "Employment type"
+        },
+        "disclosable": true,
+        "pii": false,
+        "enumLabels": {
+          "permanent": {
+            "en": "Permanent"
+          },
+          "contract": {
+            "en": "Contract"
+          },
+          "temporary": {
+            "en": "Temporary"
+          },
+          "internship": {
+            "en": "Internship"
+          }
+        },
+        "order": 4
+      }
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "Start date"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 5
+      }
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date",
+      "x-vemphy": {
+        "label": {
+          "en": "End date"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 6
+      }
+    },
+    "currentlyEmployed": {
+      "type": "boolean",
+      "x-vemphy": {
+        "label": {
+          "en": "Currently employed"
+        },
+        "disclosable": true,
+        "pii": false,
+        "order": 7
+      }
+    }
+  },
+  "required": [
+    "employeeName",
+    "jobTitle",
+    "employmentType",
+    "startDate",
+    "currentlyEmployed"
+  ]
+}

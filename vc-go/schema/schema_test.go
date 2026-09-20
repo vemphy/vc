@@ -1,160 +1,325 @@
-package schema
+package schema_test
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
+	"regexp"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/vemphy/vc/vc-go/internal/vectors"
+	"github.com/vemphy/vc/vc-go/schema"
 	"github.com/vemphy/vc/vc-go/vcctx"
 )
 
-const bank = `{"accountHolderName":"Ama Serwaa Mensah","accountType":"current","accountNumberLast4":"0042",
-"accountOpenedOn":"2019-03-04","branch":"Accra High Street","standing":"satisfactory","referenceDate":"2026-05-04"}`
+type published struct {
+	ref    schema.Ref
+	schema *schema.Schema
+}
 
-func patch(t *testing.T, base string, changes map[string]any) json.RawMessage {
+func names(t *testing.T, dir string) []string {
 	t.Helper()
-	var m map[string]any
-	if err := json.Unmarshal([]byte(base), &m); err != nil {
+	entries, err := os.ReadDir(filepath.Join(vectors.Dir(t), dir))
+	if err != nil {
 		t.Fatal(err)
 	}
-	for k, v := range changes {
-		if v == nil {
-			delete(m, k)
-		} else {
-			m[k] = v
-		}
+	var out []string
+	for _, e := range entries {
+		out = append(out, strings.TrimSuffix(e.Name(), ".json"))
 	}
-	out, _ := json.Marshal(m)
 	return out
 }
 
-func TestValidateSubject(t *testing.T) {
-	if err := ValidateSubject("BankReferenceLetter", json.RawMessage(bank)); err != nil {
-		t.Fatalf("well-formed subject refused: %v", err)
-	}
-	refused := map[string]map[string]any{
-		"unknown field":            {"balance": "1000"},
-		"value outside the enum":   {"accountType": "offshore"},
-		"date that does not exist": {"referenceDate": "2026-02-30"},
-		"date with a time":         {"referenceDate": "2026-01-10T00:00:00Z"},
-		"five digits":              {"accountNumberLast4": "00421"},
-		"padded text":              {"branch": " Accra "},
-		"empty text":               {"branch": ""},
-		"number for text":          {"branch": 7},
-		"missing required field":   {"standing": nil},
-	}
-	for name, changes := range refused {
-		if err := ValidateSubject("BankReferenceLetter", patch(t, bank, changes)); err == nil {
-			t.Errorf("%s: accepted", name)
+func customTypes(t *testing.T) []published {
+	t.Helper()
+	var out []published
+	for _, name := range names(t, "schemas/valid") {
+		var file struct {
+			Ref struct {
+				Issuer  string `json:"issuer"`
+				Name    string `json:"name"`
+				Version int    `json:"version"`
+			} `json:"ref"`
+			Schema json.RawMessage `json:"schema"`
 		}
-	}
-	if err := ValidateSubject("Passport", json.RawMessage(bank)); err == nil {
-		t.Error("unknown claim type accepted")
-	}
-	for _, raw := range []string{`null`, `[]`, `"text"`, ``} {
-		if err := ValidateSubject("BankReferenceLetter", json.RawMessage(raw)); err == nil {
-			t.Errorf("%q accepted", raw)
+		vectors.Load(t, "schemas/valid/"+name+".json", &file)
+		s, err := schema.Parse(file.Schema)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
 		}
+		out = append(out, published{schema.Ref{Issuer: file.Ref.Issuer, Name: file.Ref.Name, Version: file.Ref.Version}, s})
+	}
+	return out
+}
+
+func everyType(t *testing.T) []published {
+	out := customTypes(t)
+	for _, c := range schema.Core() {
+		out = append(out, published{c.Ref, c.Schema})
+	}
+	return out
+}
+
+func TestCoreTypes(t *testing.T) {
+	var got []string
+	for _, c := range schema.Core() {
+		got = append(got, c.Ref.Name)
+	}
+	want := []string{"Attestation", "BankBalanceLetter", "BankReferenceLetter", "DegreeCertificate", "EmploymentLetter", "InsuranceCertificate", "SalaryConfirmation"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("core types are %v", got)
 	}
 }
 
-func TestEmploymentDateRules(t *testing.T) {
-	const base = `{"employeeName":"Efua Asante","jobTitle":"Senior Accountant","employmentType":"permanent","startDate":"2021-02-01","currentlyEmployed":true}`
-	cases := []struct {
-		name    string
-		changes map[string]any
-		ok      bool
-	}{
-		{"current employee", nil, true},
-		{"former employee with end date", map[string]any{"currentlyEmployed": false, "endDate": "2025-06-30"}, true},
-		{"current employee with end date", map[string]any{"endDate": "2025-06-30"}, false},
-		{"end before start", map[string]any{"currentlyEmployed": false, "endDate": "2020-01-01"}, false},
-		{"text for a boolean", map[string]any{"currentlyEmployed": "yes"}, false},
-	}
-	for _, c := range cases {
-		err := ValidateSubject("EmploymentLetter", patch(t, base, c.changes))
-		if (err == nil) != c.ok {
-			t.Errorf("%s: err = %v", c.name, err)
-		}
-	}
-}
-
-// Every field and every disclosed field must be a term in the claims context,
-// or it would be dropped from what gets signed.
-func TestFieldsAreContextTerms(t *testing.T) {
-	raw, ok := vcctx.Document(vcctx.ClaimsV1)
-	if !ok {
-		t.Fatal("claims context not bundled")
-	}
-	var doc struct {
+func TestReservedTermsAreThoseOfTheCredentialsContext(t *testing.T) {
+	raw, _ := vcctx.Document(vcctx.CredentialsV2)
+	var ctx struct {
 		Context map[string]any `json:"@context"`
 	}
-	if err := json.Unmarshal(raw, &doc); err != nil {
+	if err := json.Unmarshal(raw, &ctx); err != nil {
 		t.Fatal(err)
 	}
-	if got := ClaimTypes(); !slices.Equal(got, []string{"BankReferenceLetter", "DegreeCertificate", "EmploymentLetter"}) {
-		t.Errorf("ClaimTypes = %v", got)
+	var want []string
+	for term := range ctx.Context {
+		if !strings.HasPrefix(term, "@") {
+			want = append(want, term)
+		}
 	}
-	for _, claimType := range ClaimTypes() {
-		if _, ok := doc.Context[claimType]; !ok {
-			t.Errorf("%s is not a context term", claimType)
+	sort.Strings(want)
+
+	metaRaw, err := os.ReadFile("meta/vemphy-claim-schema.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var meta struct {
+		Defs struct {
+			Reserved struct {
+				Enum []string `json:"enum"`
+			} `json:"reserved"`
+		} `json:"$defs"`
+	}
+	if err := json.Unmarshal(metaRaw, &meta); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(meta.Defs.Reserved.Enum, ",") != strings.Join(want, ",") {
+		t.Fatalf("reserved terms have drifted from the credentials context")
+	}
+}
+
+func TestInvalidSchemasAreRefused(t *testing.T) {
+	for _, name := range names(t, "schemas/invalid") {
+		var file struct {
+			Rule   string          `json:"rule"`
+			Schema json.RawMessage `json:"schema"`
 		}
-		for _, f := range Fields(claimType) {
-			if _, ok := doc.Context[f]; !ok {
-				t.Errorf("%s.%s is not a context term", claimType, f)
-			}
+		vectors.Load(t, "schemas/invalid/"+name+".json", &file)
+		if problems := schema.Validate(file.Schema); len(problems) == 0 {
+			t.Errorf("%s was accepted; it breaks the rule: %s", name, file.Rule)
 		}
-		if len(DefaultDisclosure(claimType)) == 0 {
-			t.Errorf("%s discloses nothing", claimType)
-		}
-		for _, f := range DefaultDisclosure(claimType) {
-			if !slices.Contains(Fields(claimType), f) {
-				t.Errorf("%s discloses %s, which it does not define", claimType, f)
-			}
+	}
+	for _, raw := range []string{`null`, `42`, `"text"`, `[]`, `{`} {
+		if len(schema.Validate([]byte(raw))) == 0 {
+			t.Errorf("%s was accepted", raw)
 		}
 	}
 }
 
-// The subjects in the shared vectors are the ones the TypeScript schemas accepted.
-func TestAcceptsVectorSubjects(t *testing.T) {
-	files, _ := filepath.Glob(filepath.Join(vectors.Dir(t), "claims", "*-001.json"))
-	if len(files) != 3 {
-		t.Fatalf("expected three -001 vectors, found %d", len(files))
-	}
-	for _, f := range files {
-		raw, _ := os.ReadFile(f)
-		var c struct {
-			Type              []string        `json:"type"`
-			CredentialSubject json.RawMessage `json:"credentialSubject"`
+func TestPatterns(t *testing.T) {
+	var file struct{ Allowed, Refused []string }
+	vectors.Load(t, "patterns.json", &file)
+	for _, p := range file.Allowed {
+		if problem := schema.PatternProblem(p); problem != "" {
+			t.Errorf("%q refused: %s", p, problem)
 		}
-		if err := json.Unmarshal(raw, &c); err != nil {
+		// Whatever is allowed must also compile here.
+		if _, err := regexp.Compile(p); err != nil {
+			t.Errorf("%q does not compile: %v", p, err)
+		}
+	}
+	for _, p := range file.Refused {
+		if schema.PatternProblem(p) == "" {
+			t.Errorf("%q was allowed", p)
+		}
+	}
+}
+
+func TestSubjects(t *testing.T) {
+	type fixtureCase struct {
+		Note  string
+		Set   map[string]json.RawMessage
+		Unset []string
+	}
+	for _, name := range names(t, "schemas/subjects") {
+		var fixture struct {
+			Schema string
+			Base   map[string]json.RawMessage
+			Accept []fixtureCase
+			Reject []fixtureCase
+		}
+		vectors.Load(t, "schemas/subjects/"+name+".json", &fixture)
+
+		raw, err := os.ReadFile(filepath.Join(filepath.Join(vectors.Dir(t), ".."), fixture.Schema))
+		if err != nil {
 			t.Fatal(err)
 		}
-		if err := ValidateSubject(c.Type[1], c.CredentialSubject); err != nil {
-			t.Errorf("%s: %v", filepath.Base(f), err)
+		var wrapped struct{ Schema json.RawMessage }
+		if json.Unmarshal(raw, &wrapped) == nil && wrapped.Schema != nil {
+			raw = wrapped.Schema
+		}
+		s, err := schema.Parse(raw)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+
+		build := func(c fixtureCase) []byte {
+			subject := map[string]json.RawMessage{}
+			for k, v := range fixture.Base {
+				subject[k] = v
+			}
+			for k, v := range c.Set {
+				subject[k] = v
+			}
+			for _, k := range c.Unset {
+				delete(subject, k)
+			}
+			out, _ := json.Marshal(subject)
+			return out
+		}
+		for _, c := range fixture.Accept {
+			if problems := s.ValidateSubject(build(c)); len(problems) > 0 {
+				t.Errorf("%s should accept %s: %v", name, c.Note, problems)
+			}
+		}
+		for _, c := range fixture.Reject {
+			if problems := s.ValidateSubject(build(c)); len(problems) == 0 {
+				t.Errorf("%s should reject %s", name, c.Note)
+			}
 		}
 	}
 }
 
-// vectors/schema.json is written from the TypeScript schemas.
-func TestMatchesTypeScriptSchemas(t *testing.T) {
-	var want map[string]struct {
-		Fields            []string `json:"fields"`
-		DefaultDisclosure []string `json:"defaultDisclosure"`
-	}
-	vectors.Load(t, "schema.json", &want)
-	if len(want) != len(ClaimTypes()) {
-		t.Fatalf("TypeScript defines %d claim types, Go %d", len(want), len(ClaimTypes()))
-	}
-	for claimType, w := range want {
-		if got := Fields(claimType); !slices.Equal(got, w.Fields) {
-			t.Errorf("%s fields: %v, want %v", claimType, got, w.Fields)
-		}
-		if got := DefaultDisclosure(claimType); !slices.Equal(got, w.DefaultDisclosure) {
-			t.Errorf("%s disclosure: %v, want %v", claimType, got, w.DefaultDisclosure)
+func TestProblemsNameEveryField(t *testing.T) {
+	var card *schema.Schema
+	for _, p := range customTypes(t) {
+		if p.ref.Name == "StaffIdCard" && p.ref.Version == 1 {
+			card = p.schema
 		}
 	}
+	problems := card.ValidateSubject([]byte(`{"holderName":" Ama","grade":"principal","issuedOn":"2026-02-30","extra":1}`))
+	var fields []string
+	for _, p := range problems {
+		fields = append(fields, p.Field)
+	}
+	sort.Strings(fields)
+	if strings.Join(fields, ",") != ",grade,holderName,issuedOn,staffNumber" {
+		t.Fatalf("problems name %q", fields)
+	}
+}
+
+// The TypeScript generator wrote vectors/cache. These bytes must match it.
+func TestContextsAndDocumentsMatchTypeScript(t *testing.T) {
+	for _, p := range everyType(t) {
+		want, err := os.ReadFile(filepath.Join(vectors.Dir(t), "cache", vcctx.CacheFileName(p.ref.ContextURL())))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := schema.GenerateContext(p.schema, p.ref.Namespace()); string(got) != string(want) {
+			t.Errorf("%s context differs:\n%s\n%s", p.ref.ContextURL(), got, want)
+		}
+
+		want, err = os.ReadFile(filepath.Join(vectors.Dir(t), "cache", vcctx.CacheFileName(p.ref.SchemaURL())))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := schema.Document(p.schema, p.ref.SchemaURL())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != string(want) {
+			t.Errorf("%s document differs:\n%s\n%s", p.ref.SchemaURL(), got, want)
+		}
+
+		inner, ok := schema.SubjectSchemaFrom(got)
+		if !ok {
+			t.Fatalf("%s: no schema inside its document", p.ref.SchemaURL())
+		}
+		again, err := schema.Parse(inner)
+		if err != nil || again.Name != p.schema.Name || len(again.Fields) != len(p.schema.Fields) {
+			t.Errorf("%s does not unwrap to its schema: %v", p.ref.SchemaURL(), err)
+		}
+	}
+}
+
+func TestCanonicalJSONMatchesJavaScript(t *testing.T) {
+	doc, err := schema.Decode([]byte(`{"b":1.0,"a":1e3,"😀":"x","￿":"y","s":"<&> \u0001\"\\\n"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := schema.CanonicalJSON(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Keys sort by UTF-16 code unit: the surrogate pair (d83d) comes before ffff.
+	want := "{\"a\":1000,\"b\":1,\"s\":\"<&> \\u0001\\\"\\\\\\n\",\"\U0001F600\":\"x\",\"￿\":\"y\"}"
+	if string(got) != want {
+		t.Fatalf("got  %s\nwant %s", got, want)
+	}
+}
+
+func TestURLs(t *testing.T) {
+	ref := schema.Ref{Issuer: "gcb", Name: "StaffIdCard", Version: 2}
+	if got, ok := schema.ParseContextURL(ref.ContextURL()); !ok || got != ref {
+		t.Errorf("context URL does not round-trip: %v", got)
+	}
+	if got, ok := schema.ParseSchemaURL(ref.SchemaURL()); !ok || got != ref {
+		t.Errorf("schema URL does not round-trip: %v", got)
+	}
+	for _, url := range []string{schema.LegacyContext, "https://vemphy.com/ns/core/attestation/v1", "https://vemphy.com/ns/i/GCB/X1/v1", "https://vemphy.com/ns/core/Attestation/v0"} {
+		if _, ok := schema.ParseContextURL(url); ok {
+			t.Errorf("%s was read as a type context", url)
+		}
+	}
+}
+
+func TestLabels(t *testing.T) {
+	var v2, all *schema.Schema
+	for _, p := range customTypes(t) {
+		switch {
+		case p.ref.Name == "StaffIdCard" && p.ref.Version == 2:
+			v2 = p.schema
+		case p.ref.Name == "AllKinds":
+			all = p.schema
+		}
+	}
+	check := func(got, want string) {
+		t.Helper()
+		if got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	}
+	label := func(s *schema.Schema, key string, wanted ...string) string {
+		l, _ := s.Label(key, wanted...)
+		return l
+	}
+	check(label(v2, "holderName"), "Card holder")
+	check(label(v2, "holderName", "fr-CA"), "Titulaire")
+	check(label(v2, "holderName", "de", "fr"), "Titulaire")
+	check(label(v2, "holderName", "de"), "Card holder")
+	check(label(all, "text", "pt-br"), "Texto")
+	check(label(all, "text", "pt"), "Text")
+	check(all.DisplayName.Pick("fr"), "Tous les types de champ")
+	if _, ok := v2.Label("nothing"); ok {
+		t.Error("found a label for a field that does not exist")
+	}
+	choice, _ := all.Field("choice")
+	check(choice.ValueLabel("a", "fr"), "Choix A")
+	check(choice.ValueLabel("b"), "b")
+
+	var kinds []string
+	for _, f := range all.Fields {
+		kinds = append(kinds, string(f.Kind))
+	}
+	check(strings.Join(kinds, " "), "text text multiline decimal integer integer boolean date datetime email uri choice")
 }
