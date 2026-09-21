@@ -40,6 +40,10 @@
       "types": "./dist/code.d.ts",
       "import": "./dist/code.js"
     },
+    "./formats": {
+      "types": "./dist/formats.d.ts",
+      "import": "./dist/formats.js"
+    },
     "./schema": {
       "types": "./dist/schema/index.d.ts",
       "import": "./dist/schema/index.js"

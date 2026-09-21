@@ -140,6 +140,23 @@ in a browser bundle on its own. Input is case-insensitive; spaces and hyphens
 are ignored; `O` is read as `0`, and `I` and `L` as `1`. `suspects` lists the
 positions most likely to have been mistyped, best first, and may be empty.
 
+## Formats
+
+The four checks behind `format` in a claim type's schema — `isDate`,
+`isDateTime`, `isEmail`, `isUri`, and the `formats` record keyed by name — are
+also importable on their own:
+
+```ts
+import { isEmail } from '@vemphy/vc/formats'
+
+isEmail('a@example.com') // true
+```
+
+Use `@vemphy/vc/formats` instead of `@vemphy/vc/schema` when the caller runs
+under a Content Security Policy with no `unsafe-eval`: `./schema` also exports
+`validateSchema` and `validateSubject`, which import Ajv, and Ajv compiles
+code at runtime. `./formats` has no such import in its graph.
+
 ## Claim types
 
 A claim type is a document: a restricted JSON Schema describing the fields of
