@@ -28,6 +28,8 @@ jobs:
       - run: pnpm build
       - name: The published entry point verifies a vector offline
         run: test "$(node packages/vc/dist/cli/main.js verify vectors/claims/gcb-001.json)" = valid
+      - name: dist/formats.js has no Ajv reachable through a shared chunk
+        run: node scripts/check-formats-graph.mjs
 
   go:
     runs-on: ubuntu-latest

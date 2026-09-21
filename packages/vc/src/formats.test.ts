@@ -4,28 +4,35 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { formats, isDate, isDateTime, isEmail, isUri } from './formats.js'
 
-// This exercises the built output, not the source: tsup gives each entry its
-// own file but shares code between entries as chunks (see tsup.config.ts), so
-// the only honest way to know what `@vemphy/vc/formats` drags into a bundle
-// is to read dist/formats.js and follow its imports, the way a bundler would.
-// A test that only called isDate() would still pass if Ajv were reachable
-// from this entry — it would just never be exercised — so it would not catch
-// the regression this file exists to prevent.
-const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../dist')
+// This walks the *source* graph of src/formats.ts, resolving relative
+// specifiers against the source tree rather than dist/. It needs no build,
+// so it runs the same way for `pnpm test` in CI (which runs before `pnpm
+// build`) and for a contributor on a clean checkout. It catches the failure
+// most likely to happen day to day: someone adding an import to
+// src/formats.ts or to src/schema/formats.ts that reaches Ajv.
+//
+// It does not catch Ajv arriving through a bundler's own machinery — tsup
+// shares code between entries as chunks, so dist/formats.js could in
+// principle end up importing a chunk that also serves ./schema. That case is
+// covered separately by scripts/check-formats-graph.mjs, which walks the
+// *built* dist/formats.js after `pnpm build` in CI. Two different failures,
+// so both checks exist.
+const src = dirname(fileURLToPath(import.meta.url))
 
-// Matches both `from "./x.js"` and bare `import "./x.js"`, which is all tsup
-// emits for ESM output: relative chunk references and, in principle, bare
-// package specifiers (which is exactly what must not appear here).
 const IMPORT_PATTERN = /(?:from|import)\s+["']([^"']+)["']/g
 
 function importsOf(source: string): string[] {
   return [...source.matchAll(IMPORT_PATTERN)].map((m) => m[1]!)
 }
 
-// Walks the real, on-disk module graph reachable from dist/formats.js,
-// returning every file's path and contents. A cycle is impossible for
-// tsup's chunk output, but the `seen` guard costs nothing and keeps this
-// correct if that ever changes.
+// Source imports use the `./foo.js` spelling required by NodeNext resolution
+// even though the file on disk is `foo.ts`, so a specifier is resolved
+// against the source tree by swapping the extension back.
+function resolveSpecifier(fromFile: string, specifier: string): string {
+  const joined = resolve(dirname(fromFile), specifier)
+  return joined.endsWith('.js') ? joined.slice(0, -3) + '.ts' : joined
+}
+
 function moduleGraph(entry: string): Map<string, string> {
   const files = new Map<string, string>()
   const seen = new Set<string>()
@@ -37,11 +44,7 @@ function moduleGraph(entry: string): Map<string, string> {
     const source = readFileSync(path, 'utf8')
     files.set(path, source)
     for (const specifier of importsOf(source)) {
-      // A relative specifier is a chunk on disk to keep walking; a bare one
-      // (a package name) has nothing to resolve locally, so it is judged by
-      // its name alone, which the assertion below already does for every
-      // specifier, relative or not.
-      if (specifier.startsWith('.')) queue.push(resolve(dirname(path), specifier))
+      if (specifier.startsWith('.')) queue.push(resolveSpecifier(path, specifier))
     }
   }
   return files
@@ -56,12 +59,15 @@ describe('the formats entry point', () => {
     expect(formats.date).toBe(isDate)
   })
 
-  it('has no reference to Ajv anywhere in its built module graph', () => {
-    const graph = moduleGraph(resolve(dist, 'formats.js'))
+  it('has no import reaching Ajv anywhere in its source module graph', () => {
+    // Checked against import specifiers, not the full source text: a source
+    // file is allowed to mention Ajv in a comment (this file's own doc
+    // comment does, explaining exactly this), so scanning prose would give a
+    // false positive. What must never appear is an import naming it.
+    const graph = moduleGraph(resolve(src, 'formats.ts'))
     expect(graph.size).toBeGreaterThan(0)
     for (const [path, source] of graph) {
       expect(importsOf(source).join(' '), path).not.toMatch(/ajv/i)
-      expect(source, path).not.toMatch(/ajv/i)
     }
   })
 })
