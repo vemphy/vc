@@ -6,6 +6,8 @@
     "did:web:vemphy.com:i:gcb#key-3": "627d480edb8556c5ebae359b32b8cac104765154e877ce4c308f09c0803d45ed",
     "did:web:vemphy.com:i:gcb#key-9": "671bc6d083ca5dac49625adc8be3fae1732bdb43ba34547c63fc11e4767f0835",
     "did:web:vemphy.com:i:ug#key-1": "18a302afd1830f21dd191706ed25c103552035192ab6c47b7c159b774f0b1a42",
-    "did:web:vemphy.com:i:emp#key-1": "bae7137d88f7683c92cfbb8fc1f08b073caf56b18d4ffb3dbaae8fac65a23efe"
+    "did:web:vemphy.com:i:emp#key-1": "bae7137d88f7683c92cfbb8fc1f08b073caf56b18d4ffb3dbaae8fac65a23efe",
+    "did:web:vemphy.com#key-1": "8555d0a415972a64b7de4abc8cd36155b905731431baed0901bf51ecf33bf44c",
+    "did:web:vemphy.com#key-2": "b158bddebd6a55a66dcfa46ee15068ace0fd3ec381c91f56e0b6c961647ac5ba"
   }
 }

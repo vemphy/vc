@@ -125,7 +125,7 @@ func Credential(ctx context.Context, raw []byte, deps Deps) Outcome {
 	pass("key")
 
 	// 3. The key must not have been revoked or expired when the proof was made.
-	if !usableAt(key, c.created) {
+	if !key.UsableAt(c.created) {
 		return stop("key_window", Unknown, KeyWindowViolation)
 	}
 	pass("key_window")
@@ -199,16 +199,6 @@ func resolve(ctx context.Context, deps Deps, issuer string) (*did.Document, erro
 	return did.Parse(raw, issuer)
 }
 
-func usableAt(key *did.Key, created time.Time) bool {
-	if key.Revoked != nil && !created.Before(*key.Revoked) {
-		return false
-	}
-	if key.Expires != nil && !created.Before(*key.Expires) {
-		return false
-	}
-	return true
-}
-
 func loadStatusList(ctx context.Context, deps Deps, c *credential, didDocument *did.Document) []byte {
 	url := c.CredentialStatus.StatusListCredential
 	raw, err := deps.FetchStatusList(ctx, url)
@@ -223,7 +213,7 @@ func loadStatusList(ctx context.Context, deps Deps, c *credential, didDocument *
 		return nil
 	}
 	key, err := did.FindKey(didDocument, list.Proof.VerificationMethod)
-	if err != nil || key == nil || !usableAt(key, list.created) {
+	if err != nil || key == nil || !key.UsableAt(list.created) {
 		return nil
 	}
 	var document map[string]any

@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/multikey/v1"
+  ],
+  "id": "did:web:vemphy.com",
+  "verificationMethod": [
+    {
+      "id": "did:web:vemphy.com#key-1",
+      "type": "Multikey",
+      "controller": "did:web:vemphy.com",
+      "publicKeyMultibase": "z6MktpRfoADqJyTtmKWhMwohBmgyEu5mcbrw9TSWCo5SSVz4"
+    },
+    {
+      "id": "did:web:vemphy.com#key-2",
+      "type": "Multikey",
+      "controller": "did:web:vemphy.com",
+      "publicKeyMultibase": "z6Mko8ZdA8MiUMDrtf1UaSRh1J8hGnYpCdj1pUpxujMvhVM2",
+      "revoked": "2026-05-15T00:00:00Z"
+    }
+  ],
+  "assertionMethod": [
+    "did:web:vemphy.com#key-1"
+  ]
+}

@@ -7,6 +7,11 @@
 #   3. Go signs, TypeScript verifies
 #   4. both sign the same document and produce the same proofValue
 #   5. both generate the same context, byte for byte, from a schema made up on the spot
+#   6. the same four checks hold for the signed issuer directory too, whose @context
+#      carries its whole term vocabulary inline, and an altered entry is refused by both
+#   7. the real directory entry points — vcinterop's directory subcommand and the
+#      TypeScript verify-directory CLI — both accept a properly signed directory and
+#      both reject one that has expired or been altered
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
@@ -17,6 +22,7 @@ trap 'rm -rf "$work"' EXIT
 go_tool="$work/vcinterop"
 cache="$PWD/vectors/cache"
 ts_tool() { (cd packages/vc && pnpm exec tsx scripts/interop.ts "$@"); }
+vc_cli() { (cd packages/vc && pnpm exec tsx cli/main.ts "$@"); }
 
 seed=$(openssl rand -hex 32)
 key=$(ts_tool pubkey --seed "$seed")
@@ -52,6 +58,67 @@ for claim in vectors/claims/*.json; do
 
   count=$((count + 1))
 done
+
+# The signed issuer directory gets the same treatment as a claim, using the
+# vector a receiver would actually be handed: vectors/directory/good.json.
+node -e 'const c=JSON.parse(require("fs").readFileSync(process.argv[1]));delete c.proof;process.stdout.write(JSON.stringify(c))' vectors/directory/good.json > "$work/directory.unsigned.json"
+
+# This is the single most valuable assertion in this script: the directory's
+# @context carries an inline term vocabulary (did, slug, status, legalName,
+# and the two types) rather than pointing at a published one, and if the two
+# JSON-LD implementations disagreed about it at all, every signature over a
+# directory would disagree too.
+ts_tool canon --cache "$cache" < "$work/directory.unsigned.json" > "$work/directory.ts.nq"
+"$go_tool" canon --cache "$cache" < "$work/directory.unsigned.json" > "$work/directory.go.nq"
+cmp "$work/directory.ts.nq" "$work/directory.go.nq" || { echo "canonical forms differ for the directory" >&2; exit 1; }
+
+ts_tool sign --cache "$cache" --seed "$seed" --vm "$vm" --created "$created" < "$work/directory.unsigned.json" > "$work/directory.ts.signed.json"
+"$go_tool" verify --cache "$cache" --key "$key" < "$work/directory.ts.signed.json" > /dev/null || { echo "Go rejected a TypeScript signature on the directory" >&2; exit 1; }
+
+"$go_tool" sign --cache "$cache" --seed "$seed" --vm "$vm" --created "$created" < "$work/directory.unsigned.json" > "$work/directory.go.signed.json"
+ts_tool verify --cache "$cache" --key "$key" < "$work/directory.go.signed.json" > /dev/null || { echo "TypeScript rejected a Go signature on the directory" >&2; exit 1; }
+
+a=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1])).proof.proofValue' "$work/directory.ts.signed.json")
+b=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1])).proof.proofValue' "$work/directory.go.signed.json")
+[ "$a" = "$b" ] || { echo "proofValue differs for the directory" >&2; exit 1; }
+
+# An altered entry must be refused too, and it has to be a field the inline
+# vocabulary covers, an issuer's status, rather than a top-level field: that
+# is what proves the vocabulary is genuinely inside what was signed.
+node -e '
+const c = JSON.parse(require("fs").readFileSync(process.argv[1]))
+c.credentialSubject.issuers[0].status = c.credentialSubject.issuers[0].status === "active" ? "suspended" : "active"
+process.stdout.write(JSON.stringify(c))
+' "$work/directory.ts.signed.json" > "$work/directory.altered.json"
+if "$go_tool" verify --cache "$cache" --key "$key" < "$work/directory.altered.json" > /dev/null 2>&1; then echo "Go accepted an altered directory" >&2; exit 1; fi
+if ts_tool verify --cache "$cache" --key "$key" < "$work/directory.altered.json" > /dev/null 2>&1; then echo "TypeScript accepted an altered directory" >&2; exit 1; fi
+
+# Finally, the real end-to-end paths against the committed, properly signed
+# good.json: vcinterop's directory subcommand, which resolves the signing key
+# from an apex DID document the way a receiver would, and the TypeScript
+# verify-directory CLI. now comes from expected.json so the expired vector is
+# genuinely expired as of the instant both sides check against.
+apex_now=$(node -p 'JSON.parse(require("fs").readFileSync("vectors/expected.json")).now')
+
+"$go_tool" directory --apex vectors/keys/apex.did.json --now "$apex_now" < vectors/directory/good.json > /dev/null \
+  || { echo "vcinterop directory rejected a valid directory" >&2; exit 1; }
+vc_cli verify-directory ../../vectors/directory/good.json --apex-doc ../../vectors/keys/apex.did.json --now "$apex_now" > /dev/null \
+  || { echo "verify-directory rejected a valid directory" >&2; exit 1; }
+
+if "$go_tool" directory --apex vectors/keys/apex.did.json --now "$apex_now" < vectors/directory/expired.json > /dev/null 2>&1; then
+  echo "vcinterop directory accepted an expired directory" >&2; exit 1
+fi
+if vc_cli verify-directory ../../vectors/directory/expired.json --apex-doc ../../vectors/keys/apex.did.json --now "$apex_now" > /dev/null 2>&1; then
+  echo "verify-directory accepted an expired directory" >&2; exit 1
+fi
+
+if "$go_tool" directory --apex vectors/keys/apex.did.json --now "$apex_now" < vectors/directory/altered-status.json > /dev/null 2>&1; then
+  echo "vcinterop directory accepted an altered directory" >&2; exit 1
+fi
+if vc_cli verify-directory ../../vectors/directory/altered-status.json --apex-doc ../../vectors/keys/apex.did.json --now "$apex_now" > /dev/null 2>&1; then
+  echo "verify-directory accepted an altered directory" >&2; exit 1
+fi
+
 # A claim type nobody has seen before: random name, random keys, every kind of field.
 suffix=$(openssl rand -hex 4 | tr '0-9' 'g-p')
 ns="https://vemphy.com/ns/i/gcb/Fresh${suffix}/v1#"
@@ -77,4 +144,4 @@ ts_tool context --namespace "$ns" < "$work/fresh.schema.json" > "$work/fresh.ts.
 "$go_tool" context --namespace "$ns" < "$work/fresh.schema.json" > "$work/fresh.go.json"
 cmp "$work/fresh.ts.json" "$work/fresh.go.json" || { echo "generated contexts differ" >&2; exit 1; }
 
-echo "interop ok: $count claims, both directions; fresh context Fresh${suffix} identical"
+echo "interop ok: $count claims, both directions; fresh context Fresh${suffix} identical; directory canon, cross-signing, and both entry points agree"

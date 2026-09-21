@@ -137,6 +137,17 @@ describe('verifyCredential', () => {
     })
   })
 
+  it("refuses a credential that claims Vemphy's own apex DID as its issuer", async () => {
+    // Vemphy is not an issuer of claims: its apex key signs the issuer
+    // directory and nothing else. verifyCredential passes a credential's own
+    // `issuer` straight to the issuer-DID pattern, so this must stay refused
+    // even though the rest of the document is otherwise well formed —
+    // widening that pattern to admit the apex would let this verify as an
+    // ordinary claim.
+    const claimingApex = { ...good(), issuer: 'did:web:vemphy.com' }
+    expect(await verifyCredential(claimingApex, deps())).toMatchObject({ result: 'unknown', reason: 'malformed' })
+  })
+
   it('answers expired before validFrom and from validUntil onwards', async () => {
     const at = (now: string) => verifyCredential(good(), deps({ now: new Date(now), fetchStatusList: freshList(now) }))
     expect((await at('2026-05-04T08:59:59Z')).result).toBe('expired')

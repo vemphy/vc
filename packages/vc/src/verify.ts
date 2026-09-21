@@ -160,7 +160,12 @@ function lookUp(doc: DidDocument, verificationMethod: string): ResolvedKey | und
   }
 }
 
-function usableAt(key: ResolvedKey, created: string): boolean {
+/**
+ * Whether a key was in good standing when a proof dated `created` was made:
+ * not yet revoked, not yet expired. Exported so `verifyDirectory` can apply
+ * the same key-window rule to the apex key that signs the issuer directory.
+ */
+export function usableAt(key: ResolvedKey, created: string): boolean {
   const at = Date.parse(created)
   if (key.revoked && at >= key.revoked.getTime()) return false
   if (key.expires && at >= key.expires.getTime()) return false

@@ -72,6 +72,62 @@ outcome := verify.Credential(ctx, claimJSON, verify.Deps{
 
 `get` is your HTTP client: `func(ctx context.Context, url string) ([]byte, error)`.
 
+## The issuer directory
+
+A claim tells you which issuer signed it. The directory tells you whether
+Vemphy recognises that issuer, and it is signed so that you can check the
+answer rather than trusting whoever served it to you.
+
+It is a credential issued by `did:web:vemphy.com` — Vemphy's own DID, whose
+document is at `https://vemphy.com/.well-known/did.json` — and it lists every
+active issuer's slug, legal name, DID and status, with a `validUntil` that is
+inside the signature.
+
+```ts
+import { apexDidUrl, verifyDirectory, directoryIssuer, DirectoryExpiredError } from '@vemphy/vc'
+
+try {
+  const directory = await verifyDirectory(await getJson('https://vemphy.com/.well-known/vemphy-issuers.json'), {
+    now: new Date(),
+    resolveApex: () => getJson(apexDidUrl()),
+  })
+  const gcb = directoryIssuer(directory, 'GCB')
+} catch (error) {
+  // DirectoryExpiredError means fetch a fresher copy. Anything else means do
+  // not trust this document at all.
+}
+```
+
+```go
+import "github.com/vemphy/vc/vc-go/directory"
+
+d, err := directory.Verify(ctx, raw, directory.Deps{
+	Now:         time.Now(),
+	ResolveApex: func(ctx context.Context) ([]byte, error) { return get(ctx, did.ApexURL()) },
+})
+if errors.Is(err, directory.ErrStale) {
+	// Merely out of date: fetch a fresher copy.
+}
+entry, ok := d.Issuer("GCB")
+```
+
+Or from a terminal, with no code at all:
+
+```
+npx @vemphy/vc verify-directory vemphy-issuers.json
+```
+
+Two refusals are worth knowing about, because both are deliberate and neither
+is an accident of implementation:
+
+- **A claim may never name `did:web:vemphy.com` as its issuer.** Vemphy's apex
+  key signs the directory and nothing else. `did.URL`, `didToUrl` and the
+  claim envelope all reject the apex form, so a document claiming Vemphy
+  issued a bank letter does not verify.
+- **A directory may never be issued by anyone else.** An issuer's own DID is
+  refused as the directory's issuer, so a bank cannot publish something a
+  receiver would read as Vemphy's list of who to trust.
+
 ## Standards
 
 - [Verifiable Credentials Data Model 2.0](https://www.w3.org/TR/vc-data-model-2.0/)
@@ -222,6 +278,12 @@ reproduce the canonical N-Quads in `vectors/canon` byte for byte, and both
 reproduce the test vector published in the W3C EdDSA specification
 (`vectors/w3c`), so they agree with the standard and not only with each other.
 
+Both also verify every file in `vectors/directory` and must agree on which are
+in good order, which are merely out of date, and which are not to be trusted at
+all. That last distinction matters: a directory that has simply expired is the
+ordinary case and a receiver should fetch a fresher one, whereas a directory
+whose signature does not hold should never be acted on.
+
 Both refuse every schema in `vectors/schemas/invalid`, agree on every subject in
 `vectors/schemas/subjects` and every pattern in `vectors/patterns.json`, and
 generate the contexts and schema documents in `vectors/cache` byte for byte.
@@ -240,10 +302,10 @@ anything else.
 
 ```
 packages/vc/schemas/  core types · the meta-schema · the claim envelope
-packages/vc/src/      code · schema · context · canon · proof · did · status · verify
+packages/vc/src/      code · schema · context · canon · proof · did · status · verify · directory
 packages/vc/cli/      the vemphy-vc command
-vc-go/                code · schema · vcctx · canon · proof · did · multibase · status · verify
-vectors/              claims · keys · status · canon · schemas · cache · w3c · codes.json · patterns.json · expected.json
+vc-go/                code · schema · vcctx · canon · proof · did · multibase · status · verify · directory
+vectors/              claims · directory · keys · status · canon · schemas · cache · w3c · codes.json · patterns.json · expected.json
 docs/                 designs and implementation plans
 ```
 

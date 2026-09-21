@@ -6,6 +6,14 @@
 //	vcinterop sign --seed <hex> --vm <id> --created <iso> < unsigned.json > signed.json
 //	vcinterop verify --key <publicKeyMultibase>       < signed.json   (exit 0 or 1)
 //	vcinterop context --namespace <iri>               < schema.json > context.json
+//	vcinterop directory --apex <did.json> --now <iso> < signed.json > directory.json (exit 0 or 1)
+//
+// canon, sign and verify work on any document, a signed issuer directory
+// included, since none of them is specific to a claim's shape. directory is
+// the one addition a directory needs: it exercises the same checks
+// directory.Verify makes of a published issuer directory, including
+// resolving the signing key from an apex DID document, which the other
+// subcommands have no reason to do.
 //
 // --cache <dir> names a directory of contexts for issuers' own types, as the
 // vemphy-vc command line keeps them. Nothing is ever fetched.
@@ -24,6 +32,7 @@ import (
 	"github.com/piprate/json-gold/ld"
 
 	"github.com/vemphy/vc/vc-go/canon"
+	"github.com/vemphy/vc/vc-go/directory"
 	"github.com/vemphy/vc/vc-go/multibase"
 	"github.com/vemphy/vc/vc-go/proof"
 	"github.com/vemphy/vc/vc-go/schema"
@@ -32,7 +41,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fail(2, "usage: vcinterop canon|sign|verify|context [flags] < document.json")
+		fail(2, "usage: vcinterop canon|sign|verify|context|directory [flags] < document.json")
 	}
 	flags := flag.NewFlagSet(os.Args[1], flag.ExitOnError)
 	seed := flags.String("seed", "", "Ed25519 seed, 64 hex characters (sign)")
@@ -41,6 +50,8 @@ func main() {
 	key := flags.String("key", "", "publicKeyMultibase (verify)")
 	cache := flags.String("cache", "", "directory of cached contexts")
 	namespace := flags.String("namespace", "", "namespace of the generated context (context)")
+	apex := flags.String("apex", "", "path to Vemphy's own DID document (directory)")
+	now := flags.String("now", "", "instant to check the directory against, RFC 3339 (directory)")
 	flags.Parse(os.Args[2:])
 
 	var loader ld.DocumentLoader
@@ -109,6 +120,29 @@ func main() {
 			fail(1, err.Error())
 		}
 		os.Stdout.Write(generated)
+
+	case "directory":
+		if *apex == "" {
+			fail(2, "--apex is required")
+		}
+		apexRaw, err := os.ReadFile(*apex)
+		if err != nil {
+			fail(2, "--apex: "+err.Error())
+		}
+		at, err := time.Parse(time.RFC3339, *now)
+		if err != nil {
+			fail(2, "--now: "+err.Error())
+		}
+		result, err := directory.Verify(context.Background(), raw, directory.Deps{
+			Now:            at,
+			ResolveApex:    func(context.Context) ([]byte, error) { return apexRaw, nil },
+			DocumentLoader: loader,
+		})
+		if err != nil {
+			fail(1, err.Error())
+		}
+		out, _ := json.MarshalIndent(result, "", "  ")
+		fmt.Println(string(out))
 
 	default:
 		fail(2, "unknown command "+os.Args[1])

@@ -29,7 +29,15 @@ export {
   type UnsignedCredential,
   type VerificationMethod,
 } from './envelope.js'
-export { didToUrl, findKey, parseDidDocument, slugOf, type ResolvedKey } from './did.js'
+export { APEX_DID, apexDidUrl, didToUrl, findKey, parseApexDidDocument, parseDidDocument, slugOf, type ResolvedKey } from './did.js'
+export {
+  type Directory,
+  type DirectoryEntry,
+  DirectoryExpiredError,
+  directoryIssuer,
+  type VerifyDirectoryDeps,
+  verifyDirectory,
+} from './directory.js'
 export { decodeBase58btc, decodeMultikey, encodeBase58btc, encodeMultikey } from './multibase.js'
 export { createProof, hashForProof, memorySigner, verifyProof, type Signer } from './proof.js'
 export { decodeList, encodeList, getBit, LIST_BITS, setBit } from './status.js'

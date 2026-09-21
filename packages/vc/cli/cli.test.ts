@@ -9,6 +9,7 @@ import { type Io, run } from './run.js'
 
 const vectors = fileURLToPath(new URL('../../../vectors/', import.meta.url))
 const claim = (name: string) => join(vectors, 'claims', `${name}.json`)
+const directory = (name: string) => join(vectors, 'directory', `${name}.json`)
 
 // Any attempt to use the network is recorded and refused.
 function offline() {
@@ -137,5 +138,72 @@ describe('vemphy-vc verify', () => {
       expect(await run(['verify', claim('gcb-009')], t.io)).toBe(1)
       expect(t.requests).toEqual([])
     })
+  })
+})
+
+describe('vemphy-vc verify-directory', () => {
+  it('prints valid for the directory in good order, without touching the network', async () => {
+    const t = offline()
+    expect(await run(['verify-directory', directory('good')], t.io)).toBe(0)
+    expect(t.out).toEqual(['valid'])
+    expect(t.requests).toEqual([])
+  })
+
+  it.each([
+    ['expired', 'expired'],
+    ['altered-status', 'unknown'],
+    ['altered-legal-name', 'unknown'],
+    ['key-window-violation', 'unknown'],
+  ])('prints %s for %s and exits 1', async (name, word) => {
+    const t = offline()
+    expect(await run(['verify-directory', directory(name)], t.io)).toBe(1)
+    expect(t.out).toEqual([word])
+  })
+
+  it('explains itself only with --verbose, and only on stderr', async () => {
+    const t = offline()
+    await run(['verify-directory', directory('altered-status'), '--verbose'], t.io)
+    expect(t.out).toEqual(['unknown'])
+    expect(t.err.join('\n')).toContain('reason: the directory signature does not hold')
+  })
+
+  it('reports the entry count and validUntil with --verbose on success', async () => {
+    const t = offline()
+    await run(['verify-directory', directory('good'), '--verbose'], t.io)
+    expect(t.err).toContain('entries: 3')
+    expect(t.err).toContain('validUntil: 2026-06-01T12:32:00.000Z')
+  })
+
+  it('takes the apex DID document from a file', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vemphy-vc-'))
+    const copy = join(dir, 'directory.json')
+    writeFileSync(copy, execFileSync('cat', [directory('good')]))
+    const t = offline()
+    const code = await run(
+      ['verify-directory', copy, '--now', '2026-06-01T12:00:00Z', '--apex-doc', join(vectors, 'keys', 'apex.did.json')],
+      t.io,
+    )
+    expect([code, t.out, t.requests]).toEqual([0, ['valid'], []])
+  })
+
+  it('falls back to vemphy.com when nothing local is available', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vemphy-vc-'))
+    const copy = join(dir, 'directory.json')
+    writeFileSync(copy, execFileSync('cat', [directory('good')]))
+    const t = offline()
+    expect(await run(['verify-directory', copy], t.io)).toBe(1)
+    expect(t.out).toEqual(['unknown'])
+    expect(t.requests).toEqual(['https://vemphy.com/.well-known/did.json'])
+  })
+
+  it('makes no network request at all with --offline', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vemphy-vc-'))
+    const copy = join(dir, 'directory.json')
+    writeFileSync(copy, execFileSync('cat', [directory('good')]))
+    const t = offline()
+    expect(await run(['verify-directory', copy, '--offline', '--verbose'], t.io)).toBe(1)
+    expect(t.out).toEqual(['unknown'])
+    expect(t.err).toContain('reason: https://vemphy.com/.well-known/did.json: offline')
+    expect(t.requests).toEqual([])
   })
 })

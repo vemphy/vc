@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { didToUrl, findKey, parseDidDocument, slugOf } from './did.js'
+import { APEX_DID, apexDidUrl, didToUrl, findKey, parseApexDidDocument, parseDidDocument, slugOf } from './did.js'
 
 const DID = 'did:web:vemphy.com:i:gcb'
 const KEY = 'z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2'
+
+const apexDocument = () => ({
+  '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/multikey/v1'],
+  id: APEX_DID,
+  verificationMethod: [{ id: `${APEX_DID}#key-1`, type: 'Multikey', controller: APEX_DID, publicKeyMultibase: KEY }],
+  assertionMethod: [`${APEX_DID}#key-1`],
+})
 
 const document = () => ({
   '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/multikey/v1'],
@@ -31,6 +38,41 @@ describe('did:web', () => {
     'did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2',
   ])('refuses %s', (did) => {
     expect(() => didToUrl(did)).toThrow()
+  })
+})
+
+describe('the apex DID', () => {
+  it('resolves to the well-known document', () => {
+    expect(apexDidUrl()).toBe('https://vemphy.com/.well-known/did.json')
+  })
+
+  it('is never accepted as an issuer DID', () => {
+    // Vemphy is not an issuer of claims: its apex key signs the issuer
+    // directory and nothing else. Widening DID_PATTERN to admit APEX_DID
+    // would let a credential claiming did:web:vemphy.com as its issuer verify
+    // as an ordinary claim, so this must keep failing.
+    expect(() => slugOf(APEX_DID)).toThrow()
+    expect(() => didToUrl(APEX_DID)).toThrow()
+  })
+
+  it('parses the document served at the apex', () => {
+    const doc = parseApexDidDocument(apexDocument())
+    const key = findKey(doc, `${APEX_DID}#key-1`)
+    expect(key?.publicKey).toHaveLength(32)
+  })
+
+  it.each([
+    { ...apexDocument(), id: 'did:web:vemphy.com:i:gcb' },
+    { id: APEX_DID },
+    { ...apexDocument(), verificationMethod: [{ id: `${APEX_DID}#key-1` }] },
+    null,
+    'not a document',
+  ])('refuses %j', (input) => {
+    expect(() => parseApexDidDocument(input)).toThrow()
+  })
+
+  it('is not accepted by parseDidDocument, whose pattern excludes it', () => {
+    expect(() => parseDidDocument(apexDocument(), APEX_DID)).toThrow()
   })
 })
 

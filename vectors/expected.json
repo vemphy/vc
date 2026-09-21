@@ -112,5 +112,27 @@
       "reason": "context_unavailable",
       "note": "Its context is not bundled and is not in vectors/cache. Offline, nothing can be said about the signature."
     }
+  },
+  "directories": {
+    "good": {
+      "result": "valid",
+      "note": "The issuer directory in good order."
+    },
+    "expired": {
+      "result": "expired",
+      "note": "validUntil has passed by NOW."
+    },
+    "altered-status": {
+      "result": "not-trustworthy",
+      "note": "One issuer's status was changed after signing; the inline vocabulary makes it part of what is signed."
+    },
+    "altered-legal-name": {
+      "result": "not-trustworthy",
+      "note": "One issuer's legalName was changed after signing."
+    },
+    "key-window-violation": {
+      "result": "not-trustworthy",
+      "note": "Signed with key-2, revoked over two weeks before this proof was made."
+    }
   }
 }

@@ -15,6 +15,7 @@ import { bytesToHex } from '@noble/hashes/utils.js'
 import { canonicalize } from '../src/canon.js'
 import { ALPHABET, formatCode, isIssuable } from '../src/code.js'
 import { CLAIMS_V1, CREDENTIALS_V2 } from '../src/context/urls.js'
+import { APEX_DID } from '../src/did.js'
 import { encodeMultikey } from '../src/multibase.js'
 import { documentLoader } from '../src/context/loader.js'
 import { createProof, memorySigner } from '../src/proof.js'
@@ -83,6 +84,147 @@ async function didDocument(slug: string): Promise<Json> {
     verificationMethod,
     assertionMethod: issuers[slug]!.filter((k) => k.active).map((k) => `${id}#${k.kid}`),
   }
+}
+
+// ---- apex DID and issuer directory -----------------------------------------
+
+// Vemphy's own DID, at the apex. key-1 signs the directory below; key-2 exists
+// only so a directory signed with it, after it was revoked, can be refused.
+const apexKeys: KeySpec[] = [
+  { kid: 'key-1', active: true },
+  { kid: 'key-2', active: false, revoked: '2026-05-15T00:00:00Z' },
+]
+const apexSignerFor = (kid: string) => memorySigner(seedFor('apex', kid), `${APEX_DID}#${kid}`)
+
+async function apexDidDocument(): Promise<Json> {
+  const verificationMethod = []
+  for (const key of apexKeys) {
+    const signer = await apexSignerFor(key.kid)
+    verificationMethod.push({
+      id: `${APEX_DID}#${key.kid}`,
+      type: 'Multikey',
+      controller: APEX_DID,
+      publicKeyMultibase: encodeMultikey(signer.publicKey),
+      ...(key.revoked && { revoked: key.revoked }),
+    })
+  }
+  return {
+    '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/multikey/v1'],
+    id: APEX_DID,
+    verificationMethod,
+    assertionMethod: apexKeys.filter((k) => k.active).map((k) => `${APEX_DID}#${k.kid}`),
+  }
+}
+
+const DIRECTORY_ID = 'https://vemphy.com/.well-known/vemphy-issuers.json'
+
+// The vocabulary is inline, not a URL, so verifying the directory fetches
+// nothing beyond the W3C context that every claim already uses.
+const DIRECTORY_CONTEXT = [
+  CREDENTIALS_V2,
+  {
+    did: 'vemphy:did',
+    slug: 'vemphy:slug',
+    status: 'vemphy:status',
+    vemphy: 'https://vemphy.com/ns/directory#',
+    issuers: { '@id': 'vemphy:issuers', '@container': '@set' },
+    legalName: 'vemphy:legalName',
+    '@protected': true,
+    VemphyIssuerDirectory: 'vemphy:VemphyIssuerDirectory',
+    VemphyIssuerDirectoryCredential: 'vemphy:VemphyIssuerDirectoryCredential',
+  },
+]
+
+const directoryEntries = [
+  { slug: 'gcb', legalName: 'GCB Bank PLC', did: did('gcb'), status: 'active' },
+  { slug: 'ug', legalName: 'University of Ghana', did: did('ug'), status: 'active' },
+  { slug: 'emp', legalName: 'Example Employer Ltd', did: did('emp'), status: 'suspended' },
+]
+
+// documentLoader() alone (bundled contexts, nothing cached or fetched) is enough to sign and
+// canonicalise the directory: its only string context entry is the bundled W3C one.
+const directoryLoader = documentLoader()
+
+type DirectorySpec = {
+  name: string
+  kid: string
+  created: string
+  validFrom: string
+  validUntil: string
+  /** Applied after signing. */
+  alter?: (signed: any) => void
+  expect: { result: 'valid' | 'expired' | 'not-trustworthy' }
+  note: string
+}
+
+const directories: DirectorySpec[] = [
+  {
+    name: 'good',
+    kid: 'key-1',
+    created: '2026-06-01T11:32:00Z',
+    validFrom: '2026-06-01T11:32:00Z',
+    validUntil: '2026-06-01T12:32:00Z',
+    expect: { result: 'valid' },
+    note: 'The issuer directory in good order.',
+  },
+  {
+    name: 'expired',
+    kid: 'key-1',
+    created: '2026-05-01T09:00:00Z',
+    validFrom: '2026-05-01T09:00:00Z',
+    validUntil: '2026-05-01T10:00:00Z',
+    expect: { result: 'expired' },
+    note: 'validUntil has passed by NOW.',
+  },
+  {
+    name: 'altered-status',
+    kid: 'key-1',
+    created: '2026-06-01T11:32:00Z',
+    validFrom: '2026-06-01T11:32:00Z',
+    validUntil: '2026-06-01T12:32:00Z',
+    alter: (signed) => (signed.credentialSubject.issuers[2].status = 'active'),
+    expect: { result: 'not-trustworthy' },
+    note: "One issuer's status was changed after signing; the inline vocabulary makes it part of what is signed.",
+  },
+  {
+    name: 'altered-legal-name',
+    kid: 'key-1',
+    created: '2026-06-01T11:32:00Z',
+    validFrom: '2026-06-01T11:32:00Z',
+    validUntil: '2026-06-01T12:32:00Z',
+    alter: (signed) => (signed.credentialSubject.issuers[0].legalName = 'GCB Holdings PLC'),
+    expect: { result: 'not-trustworthy' },
+    note: "One issuer's legalName was changed after signing.",
+  },
+  {
+    name: 'key-window-violation',
+    kid: 'key-2',
+    created: '2026-06-01T11:32:00Z',
+    validFrom: '2026-06-01T11:32:00Z',
+    validUntil: '2026-06-01T12:32:00Z',
+    expect: { result: 'not-trustworthy' },
+    note: 'Signed with key-2, revoked over two weeks before this proof was made.',
+  },
+]
+
+async function directoryCredential(spec: DirectorySpec): Promise<Json> {
+  const unsigned = {
+    '@context': DIRECTORY_CONTEXT,
+    id: DIRECTORY_ID,
+    type: ['VerifiableCredential', 'VemphyIssuerDirectoryCredential'],
+    issuer: APEX_DID,
+    validFrom: spec.validFrom,
+    validUntil: spec.validUntil,
+    credentialSubject: {
+      id: `${DIRECTORY_ID}#issuers`,
+      type: 'VemphyIssuerDirectory',
+      issuers: directoryEntries,
+    },
+  }
+  const signer = await apexSignerFor(spec.kid)
+  const signed = structuredClone(await createProof(unsigned, signer, { created: spec.created }, directoryLoader))
+  spec.alter?.(signed)
+  return signed
 }
 
 // ---- codes ----------------------------------------------------------------
@@ -480,7 +622,9 @@ async function claim(spec: ClaimSpec): Promise<{ signed: Json; unsigned: Json | 
 
 // ---- write ----------------------------------------------------------------
 
-for (const dir of ['claims', 'keys', 'status', 'canon', 'cache', 'schemas/valid', 'schemas/invalid', 'schemas/subjects']) mkdirSync(root + dir, { recursive: true })
+for (const dir of ['claims', 'keys', 'status', 'canon', 'cache', 'schemas/valid', 'schemas/invalid', 'schemas/subjects', 'directory']) {
+  mkdirSync(root + dir, { recursive: true })
+}
 
 const seeds: Json = {
   warning: 'TEST KEYS. These seeds are public. Never use them outside tests.',
@@ -491,6 +635,11 @@ for (const [slug, keys] of Object.entries(issuers)) {
   for (const key of [...keys, ...(slug === 'gcb' ? [{ kid: 'key-9' }] : [])]) {
     ;(seeds.seeds as Json)[`${did(slug)}#${key.kid}`] = bytesToHex(seedFor(slug, key.kid))
   }
+}
+// Appended after the issuers' own keys so their entries keep their existing order and bytes.
+write('keys/apex.did.json', await apexDidDocument())
+for (const key of apexKeys) {
+  ;(seeds.seeds as Json)[`${APEX_DID}#${key.kid}`] = bytesToHex(seedFor('apex', key.kid))
 }
 write('keys/test-seeds.json', seeds)
 
@@ -510,7 +659,13 @@ for (const spec of claims) {
     note: spec.note,
   }
 }
-write('expected.json', { now: NOW, vectors: expected })
+const directoryExpected: Json = {}
+for (const spec of directories) {
+  write(`directory/${spec.name}.json`, await directoryCredential(spec))
+  directoryExpected[spec.name] = { ...spec.expect, note: spec.note }
+}
+
+write('expected.json', { now: NOW, vectors: expected, directories: directoryExpected })
 
 // A verifier's cache, as `vemphy-vc verify --cache vectors/cache` reads it: every published context and
 // schema document, in canonical JSON. The Go generators must reproduce these bytes.
@@ -524,4 +679,6 @@ for (const [name, entry] of Object.entries(invalidSchemas)) {
 for (const [name, fixture] of Object.entries(subjectFixtures)) write(`schemas/subjects/${name}.json`, fixture)
 write('patterns.json', patterns)
 
-console.log(`wrote ${claims.length} claims, ${lists.length} status lists, ${Object.keys(issuers).length} DID documents`)
+console.log(
+  `wrote ${claims.length} claims, ${lists.length} status lists, ${Object.keys(issuers).length + 1} DID documents, ${directories.length} directories`,
+)

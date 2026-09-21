@@ -67,6 +67,60 @@ It prints the one word. The exit status is `0` for `valid`, `1` for anything
 else and `2` for a usage error. With `--did-doc` and `--status-list` nothing is
 fetched, so a claim can be checked on a machine with no network access.
 
+## The issuer directory
+
+Vemphy publishes a signed list of the issuers it recognises: a Verifiable
+Credential issued by `did:web:vemphy.com`, Vemphy's own DID at the apex of
+vemphy.com — never an issuer's DID itself. Check it to pin trust to Vemphy
+rather than to DNS alone.
+
+```ts
+import { apexDidUrl, directoryIssuer, verifyDirectory } from '@vemphy/vc'
+
+const getJson = (url: string) => fetch(url).then((response) => response.json())
+
+const directory = await verifyDirectory(rawDirectory, {
+  now: new Date(),
+  resolveApex: () => getJson(apexDidUrl()),
+})
+directoryIssuer(directory, 'gcb') // { slug, legalName, did, status } | undefined
+```
+
+Unlike `verifyCredential`, `verifyDirectory` throws rather than returning a
+result: a directory either holds or it does not, and there is no equivalent
+to a claim's four answers for you to act on differently. The one distinction
+worth catching is `DirectoryExpiredError`, which means the directory has
+simply gone stale — fetch a fresh copy. Every other refusal means the
+document in hand was never trustworthy as Vemphy's own.
+
+```ts
+import { DirectoryExpiredError } from '@vemphy/vc'
+
+try {
+  await verifyDirectory(rawDirectory, deps)
+} catch (error) {
+  if (error instanceof DirectoryExpiredError) {
+    // fetch a fresh copy
+  } else {
+    // not trustworthy: log it, and treat the directory as unavailable
+  }
+}
+```
+
+Vemphy is not an issuer of claims — its apex key signs the directory and
+nothing else — so `verifyCredential` refuses `did:web:vemphy.com` as a
+claim's `issuer`, however the rest of the credential looks.
+
+From the command line:
+
+```sh
+npx @vemphy/vc verify-directory issuers.json
+npx @vemphy/vc verify-directory issuers.json --apex-doc did.json --now 2026-06-01T12:00:00Z
+npx @vemphy/vc verify-directory issuers.json --offline --verbose
+```
+
+It prints `valid`, `expired` or `unknown`, with the same exit codes as `verify`.
+
 ## Codes
 
 Every claim has a short code such as `GCB-7K2M-9QXD`, printed on the document

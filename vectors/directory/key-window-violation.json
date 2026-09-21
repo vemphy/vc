@@ -1,0 +1,59 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    {
+      "did": "vemphy:did",
+      "slug": "vemphy:slug",
+      "status": "vemphy:status",
+      "vemphy": "https://vemphy.com/ns/directory#",
+      "issuers": {
+        "@id": "vemphy:issuers",
+        "@container": "@set"
+      },
+      "legalName": "vemphy:legalName",
+      "@protected": true,
+      "VemphyIssuerDirectory": "vemphy:VemphyIssuerDirectory",
+      "VemphyIssuerDirectoryCredential": "vemphy:VemphyIssuerDirectoryCredential"
+    }
+  ],
+  "id": "https://vemphy.com/.well-known/vemphy-issuers.json",
+  "type": [
+    "VerifiableCredential",
+    "VemphyIssuerDirectoryCredential"
+  ],
+  "issuer": "did:web:vemphy.com",
+  "validFrom": "2026-06-01T11:32:00Z",
+  "validUntil": "2026-06-01T12:32:00Z",
+  "credentialSubject": {
+    "id": "https://vemphy.com/.well-known/vemphy-issuers.json#issuers",
+    "type": "VemphyIssuerDirectory",
+    "issuers": [
+      {
+        "slug": "gcb",
+        "legalName": "GCB Bank PLC",
+        "did": "did:web:vemphy.com:i:gcb",
+        "status": "active"
+      },
+      {
+        "slug": "ug",
+        "legalName": "University of Ghana",
+        "did": "did:web:vemphy.com:i:ug",
+        "status": "active"
+      },
+      {
+        "slug": "emp",
+        "legalName": "Example Employer Ltd",
+        "did": "did:web:vemphy.com:i:emp",
+        "status": "suspended"
+      }
+    ]
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "eddsa-rdfc-2022",
+    "created": "2026-06-01T11:32:00Z",
+    "verificationMethod": "did:web:vemphy.com#key-2",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z5ghQZasZoBPg8149ZvicoZMh8BtBcuFxyqPVZT9ZpwM73ki16cWNzVF7X8LaZbxZZRB9KHrsXgjVRpfY4QbnsxPm"
+  }
+}
